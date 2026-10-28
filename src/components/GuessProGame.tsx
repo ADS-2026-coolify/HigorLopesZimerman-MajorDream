@@ -1,3 +1,4 @@
+/* Hallmark · redesign: full · keep guess logic, history, metrics, sound · esports dark tokens */
 import React, { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { Player } from '../types';
@@ -66,15 +67,15 @@ export const GuessProGame: React.FC = () => {
   const renderCompare = (userVal: number, targetVal: number, suffix = '') => {
     if (userVal === targetVal) {
       return (
-        <span className="flex items-center justify-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 p-2 rounded-lg font-mono font-bold">
+        <span className="flex items-center justify-center gap-1 bg-cs-green/15 text-cs-green border border-cs-green/40 p-2 rounded-lg font-mono font-bold text-xs">
           {userVal}{suffix} <Check className="w-3.5 h-3.5" />
         </span>
       );
     }
     const isHigher = userVal > targetVal;
     return (
-      <span className="flex items-center justify-center gap-1 bg-cs-surface text-slate-300 border border-cs-border p-2 rounded-lg font-mono font-bold">
-        {userVal}{suffix} {isHigher ? <ArrowDown className="w-3.5 h-3.5 text-red-400" /> : <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />}
+      <span className="flex items-center justify-center gap-1 bg-cs-card text-cs-text border border-cs-border p-2 rounded-lg font-mono font-bold text-xs">
+        {userVal}{suffix} {isHigher ? <ArrowDown className="w-3.5 h-3.5 text-cs-red" /> : <ArrowUp className="w-3.5 h-3.5 text-cs-green" />}
       </span>
     );
   };
@@ -82,19 +83,22 @@ export const GuessProGame: React.FC = () => {
   return (
     <div className="space-y-8 pb-16 max-w-4xl mx-auto">
       {/* Game Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-cs-border text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-semibold uppercase tracking-wider">
-          <span>CS Guessr Pro</span>
-        </div>
-        <h2 className="font-display font-black text-3xl text-white uppercase tracking-wide">
+      <div className="bg-cs-surface p-6 rounded-2xl border border-cs-border text-center space-y-3">
+        <h2 className="font-display font-black text-3xl text-white">
           {t('guess.title')}
         </h2>
-        <p className="text-slate-300 text-sm max-w-md mx-auto">
+
+        <div className="flex items-center justify-center gap-2 text-xs font-semibold text-cs-blue">
+          <span className="w-1.5 h-1.5 rounded-full bg-cs-blue" />
+          <span>CS Guessr Pro</span>
+        </div>
+
+        <p className="text-cs-muted text-sm max-w-md mx-auto">
           {t('guess.desc')}
         </p>
 
         <div className="pt-2">
-          <span className="text-xs font-mono font-bold text-amber-400 px-3 py-1 rounded-full bg-cs-surface border border-cs-border">
+          <span className="text-xs font-mono font-bold text-cs-accent px-3 py-1 rounded-full bg-cs-card border border-cs-border">
             {t('guess.attemptsLeft')}: {MAX_ATTEMPTS - guesses.length} / {MAX_ATTEMPTS}
           </span>
         </div>
@@ -108,23 +112,25 @@ export const GuessProGame: React.FC = () => {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={t('guess.inputPlaceholder')}
-            className="w-full px-5 py-3.5 rounded-xl bg-cs-surface border border-cs-border text-white placeholder:text-cs-muted focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 shadow-lg text-sm"
+            className="w-full px-5 py-3.5 rounded-xl bg-cs-surface border border-cs-border text-white placeholder:text-cs-muted focus:border-cs-blue focus:ring-2 focus:ring-cs-blue focus:outline-none transition-colors shadow-lg text-sm"
           />
 
           {/* Autocomplete Dropdown */}
           {suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 rounded-xl bg-cs-card border border-cs-border shadow-2xl overflow-hidden z-20">
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-xl bg-cs-card border border-cs-border overflow-hidden z-20">
               {suggestions.map(p => (
                 <button
                   key={p.id}
+                  type="button"
+                  disabled={isGameOver}
                   onClick={() => handleMakeGuess(p)}
-                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-cs-surface flex items-center justify-between border-b border-cs-border/40 last:border-0 transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-cs-surface active:bg-cs-surface/80 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-between border-b border-cs-border/40 last:border-0 transition-colors focus-visible:ring-2 focus-visible:ring-cs-blue focus-visible:outline-none"
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white">{p.nickname}</span>
                     <span className="text-xs text-cs-muted">({p.realName})</span>
                   </div>
-                  <span className="text-xs font-mono text-amber-400">{p.teamName} · {p.era}</span>
+                  <span className="text-xs font-mono text-cs-accent">{p.teamName}, {p.era}</span>
                 </button>
               ))}
             </div>
@@ -134,21 +140,23 @@ export const GuessProGame: React.FC = () => {
 
       {/* Win/Loss Modal Card */}
       {isGameOver && (
-        <div className={`p-6 rounded-2xl border-2 text-center space-y-4 max-w-md mx-auto ${
-          isWon ? 'bg-emerald-500/10 border-emerald-500' : 'bg-red-500/10 border-red-500'
+        <div className={`p-6 rounded-2xl border text-center space-y-4 max-w-md mx-auto ${
+          isWon ? 'bg-cs-green/10 border-cs-green' : 'bg-cs-red/10 border-cs-red'
         }`}>
-          <h3 className="font-display font-black text-2xl text-white uppercase">
+          <h3 className="font-display font-black text-2xl text-white">
             {isWon ? t('guess.wonMessage') : `${t('guess.lostMessage')} ${targetPlayer.nickname}!`}
           </h3>
-          <p className="text-xs text-slate-300">
-            {targetPlayer.realName} · {targetPlayer.teamName} ({targetPlayer.era}) · OVR {targetPlayer.ovr}
+          <p className="text-xs text-cs-muted">
+            {targetPlayer.realName}, {targetPlayer.teamName} ({targetPlayer.era}), OVR {targetPlayer.ovr}
           </p>
           <button
+            type="button"
+            disabled={!isGameOver}
             onClick={handleRestart}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 mx-auto shadow-lg"
+            className="px-6 py-2.5 rounded-xl bg-cs-blue hover:bg-sky-400 active:brightness-95 disabled:opacity-50 disabled:pointer-events-none text-black font-bold text-xs flex items-center justify-center gap-2 mx-auto shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-cs-blue focus-visible:outline-none"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Jogar Novamente</span>
+            <span>Jogar novamente</span>
           </button>
         </div>
       )}
@@ -156,7 +164,7 @@ export const GuessProGame: React.FC = () => {
       {/* Guesses Table */}
       {guesses.length > 0 && (
         <div className="space-y-2">
-          <div className="grid grid-cols-6 gap-2 text-[11px] font-mono font-bold text-slate-400 uppercase text-center px-2">
+          <div className="grid grid-cols-6 gap-2 text-xs font-semibold text-cs-muted text-center px-2">
             <div>{t('guess.colPlayer')}</div>
             <div>{t('guess.colTeam')}</div>
             <div>{t('guess.colCountry')}</div>
@@ -175,29 +183,29 @@ export const GuessProGame: React.FC = () => {
               return (
                 <div key={idx} className="grid grid-cols-6 gap-2 text-xs text-center">
                   {/* Player */}
-                  <div className={`p-2 rounded-lg font-bold truncate flex items-center justify-center ${
-                    isNicknameMatch ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-cs-surface text-white border border-cs-border'
+                  <div className={`p-2 rounded-lg font-bold truncate flex items-center justify-center border ${
+                    isNicknameMatch ? 'bg-cs-green/15 text-cs-green border-cs-green/40' : 'bg-cs-card text-white border-cs-border'
                   }`}>
                     {g.nickname}
                   </div>
 
                   {/* Team */}
-                  <div className={`p-2 rounded-lg font-medium truncate flex items-center justify-center ${
-                    isTeamMatch ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-cs-surface text-slate-300 border border-cs-border'
+                  <div className={`p-2 rounded-lg font-medium truncate flex items-center justify-center border ${
+                    isTeamMatch ? 'bg-cs-green/15 text-cs-green border-cs-green/40' : 'bg-cs-card text-cs-muted border-cs-border'
                   }`}>
                     {g.teamName}
                   </div>
 
                   {/* Country */}
-                  <div className={`p-2 rounded-lg font-bold flex items-center justify-center ${
-                    isCountryMatch ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-cs-surface text-slate-300 border border-cs-border'
+                  <div className={`p-2 rounded-lg font-bold flex items-center justify-center border ${
+                    isCountryMatch ? 'bg-cs-green/15 text-cs-green border-cs-green/40' : 'bg-cs-card text-cs-muted border-cs-border'
                   }`}>
                     {g.country}
                   </div>
 
                   {/* Role */}
-                  <div className={`p-2 rounded-lg font-semibold uppercase flex items-center justify-center ${
-                    isRoleMatch ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-cs-surface text-slate-300 border border-cs-border'
+                  <div className={`p-2 rounded-lg font-semibold flex items-center justify-center border ${
+                    isRoleMatch ? 'bg-cs-green/15 text-cs-green border-cs-green/40' : 'bg-cs-card text-cs-muted border-cs-border'
                   }`}>
                     {g.role}
                   </div>

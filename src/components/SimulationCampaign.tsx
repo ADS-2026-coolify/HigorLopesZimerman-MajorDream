@@ -49,7 +49,8 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
       campaign.lineup,
       campaign.overallOvr,
       campaign.mapPoints,
-      initialSeed
+      initialSeed,
+      campaign.baseProficiencies
     );
 
     const round1Pairings = generateSwissPairings(teams, [], 1, initialSeed);

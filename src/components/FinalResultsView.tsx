@@ -5,6 +5,13 @@ import { PlayerAvatar } from './PlayerAvatar';
 import { CountryFlag } from './CountryFlag';
 import { TeamLogo } from './TeamLogo';
 import { calculateSynergy } from '../utils/simulationEngine';
+import {
+  calculateFinalProficiency,
+  getProficiencyTier,
+  getOrInitDraftBaseProficiencies,
+  getSavedDraftAllocatedPoints,
+  saveDraftAllocatedPoints
+} from '../utils/mapProficiency';
 import { sound } from '../utils/sound';
 import { RotateCcw, ArrowRight, Plus, Minus, MapPin, Check, AlertCircle } from 'lucide-react';
 
@@ -13,7 +20,11 @@ interface FinalResultsViewProps {
   lineup: Player[];
   teamOvr: number;
   onRestartDraft: () => void;
-  onSimulateCampaign: (configuredTeamName: string, mapPoints: Record<string, number>) => void;
+  onSimulateCampaign: (
+    configuredTeamName: string,
+    mapPoints: Record<string, number>,
+    baseProficiencies: Record<string, number>
+  ) => void;
 }
 
 // Compact role badges configuration
@@ -39,14 +50,19 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
 
   // 2. Map point allocation budget & state (10 total points)
   const TOTAL_POINTS = 10;
-  const [points, setPoints] = useState<Record<string, number>>({
-    mirage: 2,
-    inferno: 2,
-    nuke: 2,
-    dust2: 2,
-    ancient: 2,
-    anubis: 0,
-    overpass: 0,
+  const [baseProficiencies] = useState<Record<string, number>>(() => getOrInitDraftBaseProficiencies());
+  const [points, setPoints] = useState<Record<string, number>>(() => {
+    const saved = getSavedDraftAllocatedPoints();
+    if (saved) return saved;
+    return {
+      mirage: 0,
+      inferno: 0,
+      nuke: 0,
+      dust2: 0,
+      ancient: 0,
+      anubis: 0,
+      overpass: 0,
+    };
   });
 
   const usedPoints = Object.values(points).reduce((a, b) => a + b, 0);
@@ -67,25 +83,38 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
 
   const handleAddPoint = (mapId: string) => {
     if (remainingPoints <= 0) return;
+    const currentCount = points[mapId] || 0;
+    const base = baseProficiencies[mapId] ?? 50;
+    // Enforce 100% max limit: do not allow adding points if it would exceed 100%
+    if (base + (currentCount + 1) * 5 > 100) return;
+
     sound.playClick();
-    setPoints(prev => ({
-      ...prev,
-      [mapId]: (prev[mapId] || 0) + 1
-    }));
+    setPoints(prev => {
+      const next = {
+        ...prev,
+        [mapId]: (prev[mapId] || 0) + 1
+      };
+      saveDraftAllocatedPoints(next);
+      return next;
+    });
   };
 
   const handleRemovePoint = (mapId: string) => {
     if ((points[mapId] || 0) <= 0) return;
     sound.playClick();
-    setPoints(prev => ({
-      ...prev,
-      [mapId]: (prev[mapId] || 0) - 1
-    }));
+    setPoints(prev => {
+      const next = {
+        ...prev,
+        [mapId]: (prev[mapId] || 0) - 1
+      };
+      saveDraftAllocatedPoints(next);
+      return next;
+    });
   };
 
   const handleResetPoints = () => {
     sound.playClick();
-    setPoints({
+    const reset = {
       mirage: 0,
       inferno: 0,
       nuke: 0,
@@ -93,7 +122,9 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
       ancient: 0,
       anubis: 0,
       overpass: 0,
-    });
+    };
+    setPoints(reset);
+    saveDraftAllocatedPoints(reset);
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +154,7 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
       return;
     }
     sound.playClick();
-    onSimulateCampaign(trimmed, points);
+    onSimulateCampaign(trimmed, points, baseProficiencies);
   };
 
   return (
@@ -210,10 +241,16 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
           {/* Primary Action Button (Simulate Campaign) */}
           <div className="space-y-3 pt-2">
             <button
+              disabled={remainingPoints > 0}
               onClick={handleStartCampaign}
-              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-display font-black text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className={`w-full py-4 px-6 rounded-xl font-display font-black text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl transition-all ${
+                remainingPoints > 0
+                  ? 'opacity-40 cursor-not-allowed bg-slate-800 text-slate-500 border border-slate-700'
+                  : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
+              }`}
+              title={remainingPoints > 0 ? `Distribua todos os 10 pontos de mapa (${remainingPoints} restante${remainingPoints > 1 ? 's' : ''})` : 'Avançar para o Major'}
             >
-              <span>Avançar para o Major</span>
+              <span>{remainingPoints > 0 ? `Distribua os Pontos (${remainingPoints} rest.)` : 'Avançar para o Major'}</span>
               <ArrowRight className="w-5 h-5" />
             </button>
 
@@ -389,60 +426,65 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
           </div>
         </div>
 
-        {/* Responsive Grid of Map Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3.5">
+        {/* Responsive Grid of Map Cards: 2 Rows (4 on first row, 3 on second row) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {ACTIVE_MAPS.map((map) => {
             const count = points[map.id] || 0;
-            // Progress percentage for 0 to 5 points
-            const progressPct = Math.min(100, (count / 5) * 100);
+            const baseProf = baseProficiencies[map.id] ?? 50;
+            const finalProf = calculateFinalProficiency(baseProf, count);
+            const isAtMax = finalProf >= 100 || (baseProf + (count + 1) * 5 > 100);
+            const tier = getProficiencyTier(finalProf);
 
             return (
               <div
                 key={map.id}
                 className={`
-                  relative rounded-xl border overflow-hidden transition-all duration-200 flex flex-col justify-between
-                  ${count > 0 ? 'border-amber-400/80 bg-[#0E1524] shadow-lg shadow-amber-500/5' : 'border-[#1E293B] bg-[#090D16]/80'}
+                  relative rounded-2xl border overflow-hidden transition-all duration-200 flex flex-col justify-between
+                  ${count > 0 ? 'border-amber-400/80 bg-[#0E1524] shadow-lg shadow-amber-500/10' : 'border-[#1E293B] bg-[#090D16]/90 hover:border-slate-700'}
                 `}
               >
                 {/* Landscape Thumbnail with fallback banner */}
-                <div className="relative h-24 w-full bg-[#121B2D] overflow-hidden">
+                <div className="relative h-28 sm:h-32 w-full bg-[#121B2D] overflow-hidden">
                   <img
                     src={map.imageBg}
                     alt={map.name}
                     className="w-full h-full object-cover object-center brightness-75 hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E1524] via-transparent to-black/30 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E1524] via-transparent to-black/40 pointer-events-none" />
 
                   {/* Active Duty status badge */}
-                  <span className="absolute top-2 right-2 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/70 text-slate-300 backdrop-blur-xs">
+                  <span className="absolute top-2.5 right-2.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/75 text-slate-300 backdrop-blur-xs border border-white/10">
                     {map.activeDuty ? 'Active Duty' : 'Reserva'}
                   </span>
 
-                  {/* Points tag overlay */}
-                  {count > 0 && (
-                    <span className="absolute bottom-2 left-2 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-400 text-black">
-                      +{count * 1.5} OVR
-                    </span>
-                  )}
+                  {/* Proficiency percentage badge with tier color */}
+                  <span className={`absolute bottom-2.5 left-2.5 text-[11px] font-mono font-black px-2.5 py-0.5 rounded-md shadow-md ${tier.badgeBg}`}>
+                    {finalProf}% Proficiência
+                  </span>
                 </div>
 
                 {/* Card Body */}
-                <div className="p-3 space-y-3 flex-1 flex flex-col justify-between">
+                <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between">
                   <div>
-                    <h4 className="font-display font-black text-sm text-white truncate">
-                      de_{map.name.toLowerCase()}
-                    </h4>
-                    <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
-                      {count} ponto{count !== 1 ? 's' : ''} alocado{count !== 1 ? 's' : ''}
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-display font-black text-base text-white tracking-wide truncate">
+                        de_{map.name.toLowerCase()}
+                      </h4>
+                      <span className={`text-sm font-mono font-black ${tier.textColor}`}>
+                        {finalProf}%
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-slate-400 block mt-1">
+                      Base: {baseProf}% · {count} ponto{count !== 1 ? 's' : ''} ({count > 0 ? `+${count * 5}%` : '+0%'})
                     </span>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  {/* Progress Bar with dynamic progression gradient */}
+                  <div className="w-full h-2 rounded-full bg-slate-800/90 overflow-hidden p-0.5">
                     <div
-                      className={`h-full transition-all duration-300 ${count > 0 ? 'bg-amber-400' : 'bg-transparent'}`}
-                      style={{ width: `${progressPct}%` }}
+                      className={`h-full rounded-full ${tier.barGradient} ${tier.glow} transition-all duration-300`}
+                      style={{ width: `${finalProf}%` }}
                     />
                   </div>
 
@@ -453,21 +495,26 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                       disabled={count <= 0}
                       onClick={() => handleRemovePoint(map.id)}
                       className="w-8 h-8 rounded-lg bg-[#1E293B] hover:bg-[#2A374F] text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      title="Diminuir ponto"
+                      title="Diminuir ponto (-5%)"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
 
-                    <span className={`font-display font-black text-base ${count > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                      {count}
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className={`font-display font-black text-base ${count > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                        {count}
+                      </span>
+                      <span className="text-[9px] font-mono text-slate-400 uppercase -mt-1">
+                        pts
+                      </span>
+                    </div>
 
                     <button
                       type="button"
-                      disabled={remainingPoints <= 0}
+                      disabled={remainingPoints <= 0 || isAtMax}
                       onClick={() => handleAddPoint(map.id)}
                       className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500 border border-amber-500/40 text-amber-300 hover:text-black flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      title="Aumentar ponto"
+                      title={isAtMax ? "Limite de 100% atingido" : "Aumentar ponto (+5%)"}
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>

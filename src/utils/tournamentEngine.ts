@@ -1,5 +1,6 @@
 import { Player } from '../types';
 import { ACTIVE_MAPS, HISTORICAL_TEAMS } from '../data/csData';
+import { calculateFinalProficiency } from './mapProficiency';
 import {
   TournamentTeam,
   TournamentMatch,
@@ -50,26 +51,17 @@ export function seededRandom(seed: number): () => number {
 }
 
 /**
- * Derive user team's map proficiency from allocated map points
- * Formula: Base 40% + (mapPoints * 6%), clamped 25% - 98%
+ * Derive user team's map proficiency from allocated map points and base proficiency
+ * Formula: final proficiency = base proficiency + (allocated points * 5), clamped 0% - 100%
  */
-export function getUserMapProficiency(mapId: string, mapPoints: Record<string, number>): number {
+export function getUserMapProficiency(
+  mapId: string,
+  mapPoints: Record<string, number>,
+  baseProficiencies?: Record<string, number>
+): number {
   const points = mapPoints[mapId] || 0;
-  // Natural variation per map so maps aren't all identical without points
-  const baseMapBonus: Record<string, number> = {
-    mirage: 6,
-    dust2: 5,
-    inferno: 3,
-    nuke: 4,
-    train: 4,
-    cache: 1,
-    overpass: -3,
-    ancient: -3,
-    anubis: 5
-  };
-  const base = 40 + (baseMapBonus[mapId] || 0);
-  const total = base + (points * 6);
-  return Math.min(98, Math.max(25, total));
+  const base = baseProficiencies?.[mapId] ?? 50;
+  return calculateFinalProficiency(base, points);
 }
 
 /**
@@ -105,14 +97,17 @@ export function getMatchFormat(wins: number, losses: number): MatchFormat {
 }
 
 /**
- * Build 16-team pool containing the user team + 15 opponents
+ * Build tournament team pool containing the user team + unique opponents from database
+ * Configurable size: default 16 teams (user + 15 opponents), optional 32 teams (user + 31 opponents)
  */
 export function initialize16Teams(
   userTeamName: string,
   userLineup: Player[],
   userOvr: number,
   mapPoints: Record<string, number>,
-  seed: number = 42
+  seed: number = 42,
+  baseProficiencies?: Record<string, number>,
+  tournamentSize: 16 | 32 = 16
 ): TournamentTeam[] {
   const userTeam: TournamentTeam = {
     id: 'user-team',
@@ -129,41 +124,31 @@ export function initialize16Teams(
     roundRecords: [{ wins: 0, losses: 0 }]
   };
 
+  const neededOpponents = tournamentSize - 1;
   const opponents: TournamentTeam[] = [];
 
-  // Add historical teams
-  HISTORICAL_TEAMS.forEach(ht => {
-    if (opponents.length >= 15) return;
-    const avgOvr = Math.round(ht.roster.reduce((acc, p) => acc + p.ovr, 0) / (ht.roster.length || 1));
+  // Deterministic PRNG to select opponents if we have more available than needed
+  const rng = seededRandom(seed);
+  const eligibleOpponentPool = [...HISTORICAL_TEAMS].sort(() => rng() - 0.5);
+
+  eligibleOpponentPool.forEach(ht => {
+    if (opponents.length >= neededOpponents) return;
+    // Prevent duplicate IDs
+    if (opponents.some(o => o.id === ht.id)) return;
+
+    const avgOvr = Math.round(
+      ht.roster.reduce((acc, p) => acc + p.ovr, 0) / (ht.roster.length || 1)
+    );
+
     opponents.push({
       id: ht.id,
       name: `${ht.name} '${String(ht.year).slice(-2)}`,
-      shortName: ht.logoText || ht.name.slice(0, 6),
+      shortName: ht.shortName || ht.logoText || ht.name.slice(0, 6),
       year: ht.year,
       logoText: ht.logoText,
       accentColor: ht.accentColor,
       roster: ht.roster,
       ovr: avgOvr,
-      isUser: false,
-      wins: 0,
-      losses: 0,
-      status: 'active',
-      roundRecords: [{ wins: 0, losses: 0 }]
-    });
-  });
-
-  // If we still need more to reach 15, pull from additional opponents
-  ADDITIONAL_OPPONENTS.forEach(ao => {
-    if (opponents.length >= 15) return;
-    opponents.push({
-      id: ao.id,
-      name: ao.name,
-      shortName: ao.shortName,
-      year: ao.year,
-      logoText: ao.logoText,
-      accentColor: ao.accentColor,
-      roster: [],
-      ovr: ao.ovr,
       isUser: false,
       wins: 0,
       losses: 0,
@@ -183,10 +168,10 @@ export function initialize16Teams(
   // User map proficiencies
   userTeam.mapProficiencies = {};
   TOURNAMENT_MAPS.forEach(m => {
-    userTeam.mapProficiencies![m.id] = getUserMapProficiency(m.id, mapPoints);
+    userTeam.mapProficiencies![m.id] = getUserMapProficiency(m.id, mapPoints, baseProficiencies);
   });
 
-  return [userTeam, ...opponents.slice(0, 15)];
+  return [userTeam, ...opponents];
 }
 
 /**

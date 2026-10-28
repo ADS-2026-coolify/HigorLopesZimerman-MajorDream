@@ -10,6 +10,7 @@ import { CSBingoGame } from './components/CSBingoGame';
 import { HistoryStats } from './components/HistoryStats';
 import { CampaignState, Player } from './types';
 import { calculateTeamOvr, calculateSynergy } from './utils/simulationEngine';
+import { resetDraftMapSession } from './utils/mapProficiency';
 
 export const AppContent: React.FC = () => {
   // Fresh state on every page load/refresh (just like 12a0.com)
@@ -24,12 +25,18 @@ export const AppContent: React.FC = () => {
 
   // Start new draft
   const handleStartDraft = () => {
+    resetDraftMapSession();
     setActiveCampaign(null);
     setCurrentTab('draft');
   };
 
   // Called when 5 players chosen in draft and complete summary confirmed
-  const handleDraftComplete = (lineup: Player[], teamName: string, mapPoints: Record<string, number> = {}) => {
+  const handleDraftComplete = (
+    lineup: Player[],
+    teamName: string,
+    mapPoints: Record<string, number> = {},
+    baseProficiencies?: Record<string, number>
+  ) => {
     const teamOvr = calculateTeamOvr(lineup);
     const synergy = calculateSynergy(lineup);
 
@@ -40,6 +47,7 @@ export const AppContent: React.FC = () => {
       overallOvr: teamOvr,
       synergy,
       mapPoints,
+      baseProficiencies,
       swissRound: 1,
       userWins: 0,
       userLosses: 0,
@@ -58,11 +66,12 @@ export const AppContent: React.FC = () => {
   };
 
   // Called when tactical map points confirmed
-  const handleMapPointsConfirm = (points: Record<string, number>) => {
+  const handleMapPointsConfirm = (points: Record<string, number>, baseProficiencies?: Record<string, number>) => {
     if (!activeCampaign) return;
     const updated: CampaignState = {
       ...activeCampaign,
       mapPoints: points,
+      baseProficiencies: baseProficiencies || activeCampaign.baseProficiencies,
       status: 'swiss'
     };
     setActiveCampaign(updated);
@@ -78,6 +87,7 @@ export const AppContent: React.FC = () => {
 
   // Restart campaign
   const handleRestartCampaign = () => {
+    resetDraftMapSession();
     setActiveCampaign(null);
     setCurrentTab('draft');
   };

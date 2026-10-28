@@ -1,3 +1,4 @@
+/* Hallmark · redesign: full · keep player props, role config, ovr reveal rule · semantic tokens */
 import React from 'react';
 import { Player } from '../types';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -16,52 +17,38 @@ interface RoleConfig {
   label: string;       // Sigla curta de 3 a 4 letras max (ex: IGL, AWP, ENT, RIF, LURK, SUP)
   full: string;        // Tooltip com o nome completo
   bgColor: string;     // Cor do fundo do bloco
-  shadowColor: string; // Sombra temática
 }
 
-// Siglas curtas para nunca cortar nas telas:
-// 1. IGL    -> 3 letras
-// 2. AWP    -> 3 letras
-// 3. ENT    -> 3 letras
-// 4. RIF    -> 3 letras
-// 5. LURK   -> 4 letras
-// 6. SUP    -> 3 letras
 const roleConfigs: Record<string, RoleConfig> = {
   igl: {
     label: 'IGL',
     full: 'In-Game Leader',
-    bgColor: 'bg-[#1D4ED8]',
-    shadowColor: 'shadow-[#1D4ED8]/30'
+    bgColor: 'bg-blue-700',
   },
   awp: {
     label: 'AWP',
     full: 'Sniper (AWPer)',
-    bgColor: 'bg-[#7C3AED]',
-    shadowColor: 'shadow-[#7C3AED]/30'
+    bgColor: 'bg-violet-700',
   },
   entry: {
     label: 'ENT',
     full: 'Entry Fragger',
-    bgColor: 'bg-[#DC2626]',
-    shadowColor: 'shadow-[#DC2626]/30'
+    bgColor: 'bg-red-700',
   },
   rifler: {
     label: 'RIF',
     full: 'Rifler',
-    bgColor: 'bg-[#D97706]',
-    shadowColor: 'shadow-[#D97706]/30'
+    bgColor: 'bg-amber-700',
   },
   lurker: {
     label: 'LURK',
     full: 'Lurker',
-    bgColor: 'bg-[#0D9488]',
-    shadowColor: 'shadow-[#0D9488]/30'
+    bgColor: 'bg-teal-700',
   },
   support: {
     label: 'SUP',
     full: 'Support',
-    bgColor: 'bg-[#4F46E5]',
-    shadowColor: 'shadow-[#4F46E5]/30'
+    bgColor: 'bg-indigo-700',
   },
 };
 
@@ -82,18 +69,17 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   };
 
   const getOvrColor = (ovr: number) => {
-    if (ovr >= 95) return 'text-amber-400';
-    if (ovr >= 90) return 'text-purple-400';
-    if (ovr >= 85) return 'text-sky-400';
-    return 'text-emerald-400';
+    if (ovr >= 95) return 'text-cs-accent';
+    if (ovr >= 90) return 'text-cs-yellow';
+    if (ovr >= 85) return 'text-cs-blue';
+    return 'text-cs-green';
   };
 
   const normalizedRole = player.role?.toLowerCase() || 'rifler';
   const roleConfig = roleConfigs[normalizedRole] || {
     label: normalizedRole.slice(0, 3).toUpperCase(),
     full: normalizedRole.toUpperCase(),
-    bgColor: 'bg-[#D97706]',
-    shadowColor: 'shadow-[#D97706]/30'
+    bgColor: 'bg-amber-700',
   };
 
   return (
@@ -103,18 +89,18 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       onClick={isClickable ? onSelect : undefined}
       onKeyDown={handleKeyDown}
       className={`
-        relative group transition-all duration-200 select-none
-        rounded-[24px] bg-[#0E1524] border border-[#1E293B] shadow-xl
-        flex flex-col items-center justify-between
-        ${isClickable ? 'cursor-pointer hover:-translate-y-1 hover:border-[#38BDF8]/60 hover:shadow-2xl hover:shadow-[#0284C7]/20 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]' : ''}
+        relative group select-none
+        rounded-2xl bg-cs-card border border-cs-border
+        flex flex-col items-center justify-between transition-colors
+        ${isClickable ? 'cursor-pointer hover:border-cs-blue motion-safe:hover:-translate-y-0.5 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cs-blue' : ''}
         ${isSelected ? 'opacity-40 grayscale cursor-not-allowed border-dashed' : ''}
         ${size === 'sm' ? 'p-3 w-full max-w-[170px]' : size === 'lg' ? 'p-5 w-full max-w-[280px]' : 'p-4 w-full max-w-[220px]'}
       `}
     >
-      {/* 1. Large Rounded Top Picture (Photo / Verified Portrait) */}
+      {/* 1. Large Rounded Top Picture */}
       <div className="w-full flex justify-center pt-1 pb-3">
         <div className={`
-          relative overflow-hidden rounded-[20px] bg-[#1E293B]/80 border border-[#334155]/60 flex items-center justify-center
+          relative overflow-hidden rounded-xl bg-cs-surface border border-cs-border flex items-center justify-center
           ${size === 'sm' ? 'w-24 h-28' : size === 'lg' ? 'w-48 h-56' : 'w-36 h-44'}
         `}>
           <PlayerAvatar
@@ -127,7 +113,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
       {/* 2. Bold Clean Nickname */}
       <div className="w-full text-center pb-3">
-        <h3 className="font-display font-black text-xl md:text-2xl text-white tracking-wide truncate">
+        <h3 className="font-display font-black text-xl md:text-2xl text-white truncate">
           {player.nickname}
         </h3>
       </div>
@@ -135,30 +121,30 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       {/* 3. Triple Bottom Block: [ Team Logo | Country Flag | Position Short Tag ] */}
       <div className="w-full grid grid-cols-3 gap-2 items-center">
         {/* Quad 1: Team Logo */}
-        <div className="h-12 rounded-xl bg-[#090D16] border border-[#1E293B] flex items-center justify-center p-1 overflow-hidden" title={player.teamName}>
+        <div className="h-12 rounded-xl bg-cs-surface border border-cs-border flex items-center justify-center p-1 overflow-hidden" title={player.teamName}>
           <TeamLogo
             teamId={player.teamId}
             name={player.teamName}
             logoText={player.teamName.slice(0, 3).toUpperCase()}
-            accentColor="#38BDF8"
+            accentColor="#0EA5E9"
             size="sm"
             className="w-full h-full border-0 shadow-none bg-transparent"
           />
         </div>
 
         {/* Quad 2: Country Flag */}
-        <div className="h-12 rounded-xl bg-[#090D16] border border-[#1E293B] flex items-center justify-center p-1.5 overflow-hidden" title={player.countryName || player.country}>
-          <div className="w-full h-full rounded-md overflow-hidden flex items-center justify-center shadow-inner">
+        <div className="h-12 rounded-xl bg-cs-surface border border-cs-border flex items-center justify-center p-1.5 overflow-hidden" title={player.countryName || player.country}>
+          <div className="w-full h-full rounded-md overflow-hidden flex items-center justify-center">
             <CountryFlag countryCode={player.country} />
           </div>
         </div>
 
-        {/* Quad 3: Pure Clean Pill (Sigla Curta com padding e tamanho perfeito) */}
+        {/* Quad 3: Pure Clean Pill */}
         <div 
-          className={`h-12 rounded-xl ${roleConfig.bgColor} text-white flex items-center justify-center px-1 font-display font-black shadow-md ${roleConfig.shadowColor} overflow-hidden`}
+          className={`h-12 rounded-xl ${roleConfig.bgColor} text-white flex items-center justify-center px-1 font-display font-black overflow-hidden`}
           title={roleConfig.full}
         >
-          <span className="text-xs md:text-sm tracking-wider uppercase font-mono font-black text-center drop-shadow-sm select-none">
+          <span className="text-xs md:text-sm font-black text-center select-none">
             {roleConfig.label}
           </span>
         </div>
@@ -166,8 +152,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
       {/* OVERALL RATING: STRICTLY REVEALED ONLY IN FINAL RESULTS SCREEN */}
       {showOvr && (
-        <div className="mt-3 pt-2 border-t border-[#1E293B] w-full flex items-center justify-center gap-1.5 bg-[#090D16] rounded-xl py-2">
-          <span className="text-[10px] uppercase font-bold text-cs-muted tracking-wider">OVR</span>
+        <div className="mt-3 pt-2 border-t border-cs-border w-full flex items-center justify-center gap-1.5 bg-cs-surface rounded-xl py-2">
+          <span className="text-xs font-semibold text-cs-muted">OVR</span>
           <span className={`font-display font-black text-xl leading-none ${getOvrColor(player.ovr)}`}>
             {player.ovr}
           </span>
@@ -176,8 +162,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
       {/* Selected Indicator Badge Overlay */}
       {isSelected && (
-        <div className="absolute inset-0 bg-black/75 rounded-[24px] flex items-center justify-center backdrop-blur-xs">
-          <span className="px-3 py-1.5 bg-[#1E293B] border border-[#334155] text-white text-xs font-bold rounded-lg uppercase tracking-wider">
+        <div className="absolute inset-0 bg-black/80 rounded-2xl flex items-center justify-center">
+          <span className="px-3 py-1.5 bg-cs-surface border border-cs-border text-white text-xs font-semibold rounded-lg">
             Escalado
           </span>
         </div>

@@ -100,8 +100,8 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
     <div className="w-full max-w-4xl mx-auto space-y-6 text-center">
       {/* Title & Instructions */}
       <div className="space-y-1">
-        <h2 className="font-display font-black text-2xl md:text-3xl text-white tracking-tight uppercase">
-          Sorteando Equipe...
+        <h2 className="font-display font-black text-2xl md:text-3xl text-white">
+          Sorteando Equipe…
         </h2>
         <p className="text-slate-400 text-xs md:text-sm max-w-md mx-auto">
           A roleta está sorteando a equipe do próximo jogador para a sua escalação.
@@ -109,11 +109,11 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
       </div>
 
       {/* Central Roulette Reel Box */}
-      <div className="relative rounded-2xl glass-panel p-5 border border-cs-border overflow-hidden shadow-2xl">
+      <div className="relative rounded-2xl bg-cs-surface p-5 border border-cs-border overflow-hidden">
         {/* Center Target Indicator Line */}
-        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-amber-400 z-20 pointer-events-none shadow-[0_0_12px_rgba(245,158,11,0.8)]">
-          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-amber-400" />
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-amber-400" />
+        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-cs-accent z-20 pointer-events-none">
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-cs-accent" />
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-cs-accent" />
         </div>
 
         {/* Horizontal Reel Track */}
@@ -130,7 +130,7 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
             {reelItems.map((team, idx) => (
               <div
                 key={`${team.id}_${idx}`}
-                className="w-24 h-28 shrink-0 rounded-xl bg-cs-surface border border-cs-border/80 flex flex-col items-center justify-center p-2 text-center"
+                className="w-24 h-28 shrink-0 rounded-xl bg-cs-card border border-cs-border flex flex-col items-center justify-center p-2 text-center"
               >
                 <TeamLogo
                   teamId={team.id}
@@ -139,7 +139,7 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
                   accentColor={team.accentColor}
                   size="md"
                 />
-                <span className="font-display font-bold text-[11px] text-slate-300 mt-2 truncate w-full">
+                <span className="font-display font-bold text-[11px] text-cs-text mt-2 truncate w-full">
                   {team.name}
                 </span>
                 <span className="text-[10px] font-mono text-cs-muted">
@@ -153,8 +153,8 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
         {/* Selected Team Reveal Announcement */}
         {selectedTeam && isAnimationFinished && (
           <div className="mt-4 pt-3 border-t border-cs-border flex items-center justify-center gap-3">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
-              Equipe Selecionada:
+            <span className="text-xs font-semibold text-cs-accent">
+              Equipe selecionada:
             </span>
             <span className="font-display font-black text-lg text-white">
               {selectedTeam.name} ({selectedTeam.year})

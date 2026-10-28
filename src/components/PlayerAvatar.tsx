@@ -35,7 +35,7 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
           alt={nickname}
           onError={() => setImgError(true)}
           className="w-full h-full object-cover object-center"
-          loading="lazy"
+          decoding="async"
         />
       </div>
     );

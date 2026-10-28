@@ -15,6 +15,9 @@ export interface Player {
   teamName: string;       // "Luminosity Gaming"
   note?: string;          // e.g. "MVP MLG Columbus 2016, #1 HLTV"
   avatarUrl?: string;     // photo / avatar representation
+  period?: string;        // e.g. "2016 Season (MLG Columbus)"
+  dataSource?: string;    // e.g. "HLTV.org / Liquipedia CS"
+  verifiedDate?: string;  // e.g. "2026-10-28"
   stats: {
     rating: number;       // e.g. 1.28
     impact: number;       // e.g. 1.34
@@ -25,16 +28,28 @@ export interface Player {
   };
 }
 
+export type TeamRegion = 'Americas' | 'Europe' | 'Asia-Pacific';
+
 export interface HistoricalTeam {
   id: string;             // "luminosity-2016"
   name: string;           // "Luminosity Gaming"
+  shortName?: string;     // "LG"
   year: number;           // 2016
+  lineupYear: number;     // 2016 (ano da lineup)
+  isHistorical: boolean;  // true se for time lendário/histórico, false se for formação recente
+  season?: string;        // "2016 (MLG Columbus Major Champions)"
   era: Era;
+  country?: string;       // "BR", "DK", "EU", etc.
+  region: TeamRegion;     // "Americas" | "Europe" | "Asia-Pacific"
+  tags: string[];         // e.g. ["2016", "historico", "americas", "major-winner"]
+  coach?: string;         // e.g. "zews (Wilton Prado)"
   logoText: string;       // "LG"
   accentColor: string;    // "#00A3E0"
   roster: Player[];
   description?: string;
   majorTrophies?: string[];
+  dataSource?: string;    // e.g. "HLTV.org / Liquipedia CS"
+  verifiedDate?: string;  // e.g. "2026-10-28"
 }
 
 export interface MapData {
@@ -107,6 +122,7 @@ export interface CampaignState {
   overallOvr: number;
   synergy: SynergyResult;
   mapPoints: Record<string, number>;
+  baseProficiencies?: Record<string, number>;
   // Swiss Stage: 16 teams, swiss rounds
   swissRound: number;
   userWins: number;

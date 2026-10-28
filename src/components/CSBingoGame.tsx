@@ -1,3 +1,4 @@
+/* Hallmark · redesign: full · keep bingo logic, deck, cards, win check · esports dark tokens */
 import React, { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { Player } from '../types';
@@ -19,22 +20,22 @@ export const CSBingoGame: React.FC = () => {
 
   // 16 squares (4x4)
   const initialSquares: BingoSquare[] = [
-    { id: 0, label: 'Lenda Brasileira 🇧🇷', check: p => p.country === 'BR', filledBy: null },
-    { id: 1, label: 'OVR 95+ (Estrela)', check: p => p.ovr >= 95, filledBy: null },
-    { id: 2, label: 'AWPer de Ofício', check: p => p.role === 'awp', filledBy: null },
+    { id: 0, label: 'Lenda brasileira 🇧🇷', check: p => p.country === 'BR', filledBy: null },
+    { id: 1, label: 'OVR 95+ (estrela)', check: p => p.ovr >= 95, filledBy: null },
+    { id: 2, label: 'AWPer de ofício', check: p => p.role === 'awp', filledBy: null },
     { id: 3, label: 'Era 2013-2016', check: p => p.eraGroup === '2013-2016', filledBy: null },
 
     { id: 4, label: 'Capitão / IGL', check: p => p.role === 'igl', filledBy: null },
     { id: 5, label: 'Mais de 2 Majors', check: p => (p.stats.majorsWon || 0) >= 2, filledBy: null },
-    { id: 6, label: 'Jogador Dinamarquês 🇩🇰', check: p => p.country === 'DK', filledBy: null },
+    { id: 6, label: 'Jogador dinamarquês 🇩🇰', check: p => p.country === 'DK', filledBy: null },
     { id: 7, label: 'Entry Fragger', check: p => p.role === 'entry', filledBy: null },
 
-    { id: 8, label: 'Lurker Lendário', check: p => p.role === 'lurker', filledBy: null },
+    { id: 8, label: 'Lurker lendário', check: p => p.role === 'lurker', filledBy: null },
     { id: 9, label: 'Lenda do CS2', check: p => p.eraGroup === 'CS2', filledBy: null },
     { id: 10, label: 'Rating 1.20+', check: p => p.stats.rating >= 1.20, filledBy: null },
-    { id: 11, label: 'Lenda Sueca 🇸🇪', check: p => p.country === 'SE', filledBy: null },
+    { id: 11, label: 'Lenda sueca 🇸🇪', check: p => p.country === 'SE', filledBy: null },
 
-    { id: 12, label: 'Jogador Suporte', check: p => p.role === 'support', filledBy: null },
+    { id: 12, label: 'Jogador suporte', check: p => p.role === 'support', filledBy: null },
     { id: 13, label: 'Jogador da Ucrânia 🇺🇦', check: p => p.country === 'UA', filledBy: null },
     { id: 14, label: 'OVR 90-94', check: p => p.ovr >= 90 && p.ovr <= 94, filledBy: null },
     { id: 15, label: 'HS% acima de 50%', check: p => p.stats.hsPercentage >= 50, filledBy: null },
@@ -118,40 +119,44 @@ export const CSBingoGame: React.FC = () => {
   return (
     <div className="space-y-8 pb-16 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-cs-border text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-semibold uppercase tracking-wider">
-          <span>CS Bingo 4x4</span>
-        </div>
-        <h2 className="font-display font-black text-3xl text-white uppercase tracking-wide">
+      <div className="bg-cs-surface p-6 rounded-2xl border border-cs-border text-center space-y-3">
+        <h2 className="font-display font-black text-3xl text-white">
           {t('bingo.title')}
         </h2>
-        <p className="text-slate-300 text-sm max-w-md mx-auto">
+
+        <div className="flex items-center justify-center gap-2 text-xs font-semibold text-cs-accent">
+          <span className="w-1.5 h-1.5 rounded-full bg-cs-accent" />
+          <span>CS Bingo 4x4</span>
+        </div>
+
+        <p className="text-cs-muted text-sm max-w-md mx-auto">
           {t('bingo.desc')}
         </p>
 
         <div className="pt-2 flex items-center justify-center gap-4">
-          <span className="text-xs font-mono font-bold text-slate-300 px-3 py-1 rounded-full bg-cs-surface border border-cs-border">
+          <span className="text-xs font-mono font-bold text-cs-text px-3 py-1 rounded-full bg-cs-card border border-cs-border">
             {t('bingo.cardsLeft')}: {deck.length}
           </span>
           <button
+            type="button"
             onClick={handleReset}
-            className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+            className="text-xs text-cs-muted hover:text-white active:brightness-95 flex items-center gap-1 transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            {t('bingo.reset')}
+            <span>{t('bingo.reset')}</span>
           </button>
         </div>
       </div>
 
       {/* Bingo Win Banner */}
       {isBingoWon && (
-        <div className="p-6 rounded-2xl bg-amber-500/20 border-2 border-amber-500 text-center space-y-3">
-          <h3 className="font-display font-black text-3xl text-white uppercase flex items-center justify-center gap-2">
-            <Flame className="w-7 h-7 text-amber-400" />
-            {t('bingo.winMessage')}
+        <div className="p-6 rounded-2xl bg-cs-accent/20 border border-cs-accent text-center space-y-2">
+          <h3 className="font-display font-black text-2xl text-white flex items-center justify-center gap-2">
+            <Flame className="w-6 h-6 text-cs-accent" />
+            <span>{t('bingo.winMessage')}</span>
           </h3>
-          <p className="text-slate-200 text-sm">
-            Você completou uma linha/coluna ou diagonal com maestria tática!
+          <p className="text-cs-text text-sm">
+            Você completou uma linha, coluna ou diagonal com maestria tática!
           </p>
         </div>
       )}
@@ -166,27 +171,28 @@ export const CSBingoGame: React.FC = () => {
             return (
               <button
                 key={sq.id}
+                type="button"
                 disabled={!isValidForCurrent && !sq.filledBy}
                 onClick={() => handlePlacePlayer(sq.id)}
                 className={`
-                  h-28 p-2 rounded-xl border text-center transition-all flex flex-col justify-between
+                  h-28 p-2 rounded-xl border text-center transition-colors flex flex-col justify-between focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none disabled:cursor-not-allowed
                   ${sq.filledBy 
-                    ? 'bg-emerald-500/20 border-emerald-500/60' 
+                    ? 'bg-cs-green/15 border-cs-green/60' 
                     : isValidForCurrent 
-                      ? 'bg-amber-500/20 border-amber-400 animate-pulse cursor-pointer' 
-                      : 'bg-cs-surface/60 border-cs-border opacity-70'}
+                      ? 'bg-cs-accent/20 border-cs-accent motion-safe:animate-pulse motion-reduce:animate-none cursor-pointer' 
+                      : 'bg-cs-card border-cs-border opacity-65'}
                 `}
               >
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                <span className="text-[10px] font-semibold text-cs-muted">
                   #{sq.id + 1}
                 </span>
 
                 {sq.filledBy ? (
                   <div className="space-y-0.5">
-                    <span className="font-display font-black text-sm text-emerald-300 block truncate">
+                    <span className="font-display font-bold text-sm text-cs-green block truncate">
                       {sq.filledBy.nickname}
                     </span>
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold block">
+                    <span className="text-[10px] font-semibold text-cs-green block">
                       OVR {sq.filledBy.ovr}
                     </span>
                   </div>
@@ -197,7 +203,7 @@ export const CSBingoGame: React.FC = () => {
                 )}
 
                 <div className="h-4 flex items-center justify-center">
-                  {sq.filledBy && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                  {sq.filledBy && <Check className="w-3.5 h-3.5 text-cs-green" />}
                 </div>
               </button>
             );
@@ -205,9 +211,9 @@ export const CSBingoGame: React.FC = () => {
         </div>
 
         {/* Drawn Player Drawer Panel */}
-        <div className="glass-panel p-6 rounded-2xl border border-cs-border flex flex-col items-center justify-center text-center space-y-4">
-          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
-            Jogador da Vez
+        <div className="bg-cs-surface p-6 rounded-2xl border border-cs-border flex flex-col items-center justify-center text-center space-y-4">
+          <span className="text-xs font-semibold text-cs-muted">
+            Jogador da vez
           </span>
 
           {currentDrawn ? (
@@ -216,8 +222,9 @@ export const CSBingoGame: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={handleBurnPlayer}
-                  className="w-full py-2.5 rounded-xl bg-cs-surface hover:bg-cs-card border border-cs-border text-xs font-bold text-red-400 uppercase tracking-wider transition-colors"
+                  className="w-full py-2.5 rounded-xl bg-cs-card hover:bg-cs-hover active:brightness-95 border border-cs-border text-xs font-semibold text-cs-red transition-colors focus-visible:ring-2 focus-visible:ring-cs-red focus-visible:outline-none"
                 >
                   {t('bingo.burnPlayer')}
                 </button>
@@ -225,16 +232,17 @@ export const CSBingoGame: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4 py-8">
-              <div className="w-16 h-16 rounded-2xl bg-cs-surface border border-cs-border flex items-center justify-center mx-auto text-cs-muted">
-                <Grid className="w-8 h-8" />
+              <div className="w-14 h-14 rounded-2xl bg-cs-card border border-cs-border flex items-center justify-center mx-auto text-cs-muted">
+                <Grid className="w-7 h-7" />
               </div>
-              <p className="text-xs text-slate-400 max-w-[200px]">
+              <p className="text-xs text-cs-muted max-w-[200px]">
                 Clique para sacar uma carta lendária e encaixar na cartela.
               </p>
               <button
+                type="button"
                 disabled={deck.length === 0}
                 onClick={handleDrawNext}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 mx-auto shadow-lg hover:scale-105 transition-all"
+                className="px-6 py-3 rounded-xl bg-cs-accent hover:bg-cs-accentHover active:brightness-95 disabled:opacity-50 disabled:pointer-events-none text-black font-bold text-xs flex items-center justify-center gap-2 mx-auto shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
               >
                 <span>{t('bingo.drawCard')}</span>
                 <ArrowRight className="w-4 h-4" />
