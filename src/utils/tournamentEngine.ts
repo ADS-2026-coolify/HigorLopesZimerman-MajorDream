@@ -36,7 +36,19 @@ export const TOURNAMENT_MAPS: MapMeta[] = [
   { id: 'overpass', name: 'Overpass', thumbnail: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80' },
 ];
 
-// Additional opponent profiles to guarantee 15 unique opponents alongside user team
+/**
+ * Deterministic Fisher-Yates shuffle using provided PRNG
+ */
+function deterministicShuffle<T>(items: T[], rng: () => number): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
 const ADDITIONAL_OPPONENTS: Array<{ id: string; name: string; shortName: string; year: number; logoText: string; accentColor: string; ovr: number }> = [
   { id: 'furia-2019', name: "FURIA '19", shortName: 'FURIA', year: 2019, logoText: 'FUR', accentColor: '#000000', ovr: 88 },
   { id: 'renegades-2019', name: "Renegades '19", shortName: 'RNG', year: 2019, logoText: 'RNG', accentColor: '#8B0000', ovr: 85 },
@@ -136,7 +148,7 @@ export function initialize16Teams(
 
   // Deterministic PRNG to select opponents if we have more available than needed
   const rng = seededRandom(seed);
-  const eligibleOpponentPool = [...HISTORICAL_TEAMS].sort(() => rng() - 0.5);
+  const eligibleOpponentPool = deterministicShuffle(HISTORICAL_TEAMS, rng);
 
   eligibleOpponentPool.forEach(ht => {
     if (opponents.length >= neededOpponents) return;
@@ -222,22 +234,20 @@ export function generateSwissPairings(
     return lA - lB;
   });
 
-  let floatingTeam: TournamentTeam | null = null;
+  let floatingTeams: TournamentTeam[] = [];
 
-  for (const key of groupKeys) {
-    let pool = [...groups[key].filter(t => !assigned.has(t.id))];
+  for (let gIdx = 0; gIdx < groupKeys.length; gIdx++) {
+    const key = groupKeys[gIdx];
+    const isLastGroup = gIdx === groupKeys.length - 1;
+    let pool = [
+      ...floatingTeams,
+      ...deterministicShuffle(groups[key].filter(t => !assigned.has(t.id)), rng)
+    ];
+    floatingTeams = [];
 
-    if (floatingTeam) {
-      pool.unshift(floatingTeam);
-      floatingTeam = null;
-    }
-
-    // Shuffle pool deterministically
-    pool.sort(() => rng() - 0.5);
-
-    // If pool has odd number of teams and not the last group, float the last one
-    if (pool.length % 2 !== 0 && groupKeys.indexOf(key) < groupKeys.length - 1) {
-      floatingTeam = pool.pop()!;
+    // If pool has odd number of teams and not the last group, float the last one to the next group
+    if (pool.length % 2 !== 0 && !isLastGroup) {
+      floatingTeams.push(pool.pop()!);
     }
 
     // Pair greedily avoiding rematches
@@ -262,8 +272,10 @@ export function generateSwissPairings(
       assigned.add(teamA.id);
       assigned.add(teamB.id);
 
-      // Match format derived from record
-      const format = getMatchFormat(teamA.wins, teamA.losses);
+      // Match format derived from highest-stakes record of the pair
+      const formatA = getMatchFormat(teamA.wins, teamA.losses);
+      const formatB = getMatchFormat(teamB.wins, teamB.losses);
+      const format = formatA === 'BO3' || formatB === 'BO3' ? 'BO3' : 'BO1';
 
       // Always put user team as team1 if present for convenient UI
       const [t1, t2] = teamB.isUser ? [teamB, teamA] : [teamA, teamB];
@@ -279,27 +291,31 @@ export function generateSwissPairings(
       });
     }
 
-    if (pool.length === 1 && !floatingTeam) {
-      floatingTeam = pool.pop()!;
+    if (pool.length > 0) {
+      floatingTeams.push(...pool);
     }
   }
 
-  // If one team remains floating at the end, pair with the least-recently matched
-  if (floatingTeam && pairings.length > 0) {
-    // Edge-case safety fallback
-    const unpaired = activeTeams.filter(t => !assigned.has(t.id));
-    if (unpaired.length === 2) {
-      const format = getMatchFormat(unpaired[0].wins, unpaired[0].losses);
-      pairings.push({
-        id: `match_r${roundNumber}_${unpaired[0].id}_vs_${unpaired[1].id}`,
-        roundNumber,
-        team1Id: unpaired[0].id,
-        team2Id: unpaired[1].id,
-        format,
-        status: 'pending_veto',
-        mapResults: []
-      });
-    }
+  // Safety fallback: pair any remaining unassigned active teams in pairs
+  const unpaired = activeTeams.filter(t => !assigned.has(t.id));
+  while (unpaired.length >= 2) {
+    const teamA = unpaired.shift()!;
+    const teamB = unpaired.shift()!;
+    assigned.add(teamA.id);
+    assigned.add(teamB.id);
+    const formatA = getMatchFormat(teamA.wins, teamA.losses);
+    const formatB = getMatchFormat(teamB.wins, teamB.losses);
+    const format = formatA === 'BO3' || formatB === 'BO3' ? 'BO3' : 'BO1';
+    const [t1, t2] = teamB.isUser ? [teamB, teamA] : [teamA, teamB];
+    pairings.push({
+      id: `match_r${roundNumber}_${t1.id}_vs_${t2.id}`,
+      roundNumber,
+      team1Id: t1.id,
+      team2Id: t2.id,
+      format,
+      status: 'pending_veto',
+      mapResults: []
+    });
   }
 
   return pairings;
@@ -816,12 +832,12 @@ export function simulateCpuVsCpuMatch(
     mapsToPlay.push(mapPool[Math.floor(rng() * mapPool.length)]);
   } else if (match.format === 'BO5') {
     // BO5: pick 5 unique maps
-    mapPool.sort(() => rng() - 0.5);
-    mapsToPlay.push(mapPool[0], mapPool[1], mapPool[2], mapPool[3], mapPool[4]);
+    const shuffled = deterministicShuffle(mapPool, rng);
+    mapsToPlay.push(shuffled[0], shuffled[1], shuffled[2], shuffled[3], shuffled[4]);
   } else {
     // BO3: pick up to 3 maps
-    mapPool.sort(() => rng() - 0.5);
-    mapsToPlay.push(mapPool[0], mapPool[1], mapPool[2]);
+    const shuffled = deterministicShuffle(mapPool, rng);
+    mapsToPlay.push(shuffled[0], shuffled[1], shuffled[2]);
   }
 
   const mapResults: MapGameResult[] = [];
@@ -946,10 +962,8 @@ export function buildDefaultEntryPools(
   });
 
   // Sort by OVR descending (with deterministic tie-breaker) to assign rankings
-  const ranked = [...allOpponents].sort((a, b) => {
-    if (b.ovr !== a.ovr) return b.ovr - a.ovr;
-    return (rng() - 0.5);
-  });
+  const shuffledOpponents = deterministicShuffle(allOpponents, rng);
+  const ranked = [...shuffledOpponents].sort((a, b) => b.ovr - a.ovr);
 
   ranked.forEach((t, idx) => {
     t.seed = idx + 1;

@@ -881,6 +881,7 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
         activeUserTeam &&
         activeOpponentTeam && (
           <MapVetoView
+            key={userActiveMatch.id}
             match={userActiveMatch}
             userTeam={activeUserTeam}
             opponentTeam={activeOpponentTeam}
@@ -894,6 +895,7 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
         activeUserTeam &&
         activeOpponentTeam && (
           <MatchSimulationView
+            key={userActiveMatch.id}
             match={userActiveMatch}
             userTeam={activeUserTeam}
             opponentTeam={activeOpponentTeam}
