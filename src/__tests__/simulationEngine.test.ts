@@ -3,7 +3,7 @@ import { calculateSynergy, calculateTeamOvr, simulateMatch } from '../utils/simu
 import { Player } from '../types';
 import { HISTORICAL_TEAMS } from '../data/csData';
 
-describe('Draft Arena Game Engine Tests', () => {
+describe('Major Dream Game Engine Tests', () => {
   const lgTeam = HISTORICAL_TEAMS.find(t => t.id === 'lg-2016')!;
 
   it('calculates Full Composition synergy correctly when balanced with +2 OVR bonus', () => {

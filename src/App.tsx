@@ -152,7 +152,7 @@ export const AppContent: React.FC = () => {
 
       <footer className="border-t border-cs-border/60 py-6 text-center text-xs text-cs-muted bg-cs-surface/60">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© 2026 Draft Arena. Projeto inspirado em 12a0.com. Todos os dados históricos de Counter-Strike são de uso esportivo/educativo.</p>
+          <p>© 2026 Major Dream. Projeto inspirado em 12a0.com. Todos os dados históricos de Counter-Strike são de uso esportivo/educativo.</p>
           <div className="flex items-center gap-4 text-slate-400">
             <span>MR12 Simulation Engine</span>
             <span>·</span>

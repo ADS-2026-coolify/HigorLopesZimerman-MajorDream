@@ -1,4 +1,4 @@
--- Draft Arena PostgreSQL Schema Migrations
+-- Major Dream PostgreSQL Schema Migrations
 
 -- 1. Users Table (Cloud Profiles / Authentication)
 CREATE TABLE IF NOT EXISTS users (

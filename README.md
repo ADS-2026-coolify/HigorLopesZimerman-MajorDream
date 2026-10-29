@@ -1,8 +1,8 @@
-# DRAFT ARENA — Counter-Strike Draft & Competitive Simulation Platform
+# MAJOR DREAM — Counter-Strike Draft & Competitive Simulation Platform
 
-**Draft Arena** é uma plataforma web para fãs de Counter-Strike que combina seleção de elencos de todas as eras (1.6, Source, CS:GO, CS2), gerenciamento de sinergia tática, simulação competitiva round a round no formato MR12 até a conquista do Major, jogos diários de conhecimento (CS Guessr) e CS Bingo 4x4.
+**Major Dream** é uma plataforma web para fãs de Counter-Strike que combina seleção de elencos de todas as eras (1.6, Source, CS:GO, CS2), gerenciamento de sinergia tática, simulação competitiva round a round no formato MR12 até a conquista do Major, jogos diários de conhecimento (CS Guessr) e CS Bingo 4x4.
 
-Inspirado nos conceitos fundamentais de `12a0.com`, o Draft Arena foi construído do zero com arquitetura moderna, identidade visual original no estilo dark esports, internacionalização completa (**pt-BR** e **en**), áudio tático sintetizado via Web Audio API e persistência de dados.
+Inspirado nos conceitos fundamentais de `12a0.com`, o Major Dream foi construído do zero com arquitetura moderna, identidade visual original no estilo dark esports, internacionalização completa (**pt-BR** e **en**), áudio tático sintetizado via Web Audio API e persistência de dados.
 
 ---
 

@@ -3,7 +3,7 @@ export type Locale = 'pt-BR' | 'en';
 export const translations = {
   'pt-BR': {
     // Nav
-    'nav.brand': 'DRAFT ARENA',
+    'nav.brand': 'MAJOR DREAM',
     'nav.roadToMajor': 'Road to Major',
     'nav.guess': 'Adivinhe o Pro',
     'nav.bingo': 'CS Bingo',
@@ -128,7 +128,7 @@ export const translations = {
   },
   'en': {
     // Nav
-    'nav.brand': 'DRAFT ARENA',
+    'nav.brand': 'MAJOR DREAM',
     'nav.roadToMajor': 'Road to Major',
     'nav.guess': 'Guess the Pro',
     'nav.bingo': 'CS Bingo',

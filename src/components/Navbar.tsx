@@ -42,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectTab }) => {
           </div>
           <div className="flex flex-col">
             <span className="font-display font-black tracking-normal text-xl text-white group-hover:text-cs-accent transition-colors">
-              DRAFT<span className="text-cs-accent">ARENA</span>
+              MAJOR<span className="text-cs-accent">DREAM</span>
             </span>
             <span className="text-[11px] text-cs-muted -mt-1">
               Major Simulation

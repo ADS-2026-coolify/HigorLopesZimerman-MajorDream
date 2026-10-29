@@ -4,7 +4,7 @@ import { HISTORICAL_TEAMS, ALL_PLAYERS } from './csData';
 import { getPlayerPortrait } from '../utils/playerAssets';
 import { initialize16Teams } from '../utils/tournamentEngine';
 
-describe('Draft Arena - CS Database Validation', () => {
+describe('Major Dream - CS Database Validation', () => {
   it('registers at least 32 distinct teams', () => {
     expect(CS_DATABASE.length).toBeGreaterThanOrEqual(32);
     expect(HISTORICAL_TEAMS.length).toBeGreaterThanOrEqual(32);

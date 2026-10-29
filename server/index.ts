@@ -15,7 +15,7 @@ app.use(express.json());
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'online',
-    product: 'Draft Arena API',
+    product: 'Major Dream API',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -86,7 +86,7 @@ app.get('/api/maps', (_req: Request, res: Response) => {
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-    console.log(`[Draft Arena Backend] Running on http://localhost:${PORT}`);
+    console.log(`[Major Dream Backend] Running on http://localhost:${PORT}`);
   });
 }
 

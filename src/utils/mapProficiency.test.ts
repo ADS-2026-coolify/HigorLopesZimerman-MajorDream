@@ -37,7 +37,7 @@ import {
   TOURNAMENT_MAPS
 } from './tournamentEngine';
 
-describe('Draft Arena - Map Proficiency System', () => {
+describe('Major Dream - Map Proficiency System', () => {
   beforeEach(() => {
     localStorage.clear();
   });

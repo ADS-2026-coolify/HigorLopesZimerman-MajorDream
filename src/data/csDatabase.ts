@@ -7,7 +7,7 @@ import { HistoricalTeam } from '../types';
  * - Verified against HLTV.org match archives, Major records, and Liquipedia CS.
  * - Verification Date: 2026-10-28
  * - Each roster represents a real 5-player lineup from a distinct season / tournament run.
- * - Player overalls (OVR) are calibrated game ratings on a 75-99 scale designed for Draft Arena gameplay.
+ * - Player overalls (OVR) are calibrated game ratings on a 75-99 scale designed for Major Dream gameplay.
  * - Coaches are recorded where officially designated for that historical period.
  */
 export const CS_DATABASE: HistoricalTeam[] = [
