@@ -254,9 +254,13 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
             {/* Central Match Score */}
             <div className="flex flex-col items-center justify-center w-full px-2">
               <div className="text-5xl sm:text-6xl font-display font-black text-white tabular-nums tracking-tight whitespace-nowrap flex items-center justify-center">
-                <span>{userLiveScore}</span>
+                <span className={`transition-colors ${isMapFinished && userLiveScore > oppLiveScore ? 'text-cs-green' : 'text-white'}`}>
+                  {userLiveScore}
+                </span>
                 <span className="text-cs-muted font-normal mx-2 sm:mx-3">−</span>
-                <span>{oppLiveScore}</span>
+                <span className={`transition-colors ${isMapFinished && oppLiveScore > userLiveScore ? 'text-cs-green' : 'text-white'}`}>
+                  {oppLiveScore}
+                </span>
               </div>
               {/* Subtitle with Regulation or Overtime Target and side switch */}
               <span className="text-xs font-semibold text-cs-muted mt-1 text-center whitespace-nowrap">
