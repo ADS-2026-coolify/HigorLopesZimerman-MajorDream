@@ -8,9 +8,15 @@ import {
   evaluateMatchStatus,
   getTeamSides,
   simulateCompetitiveMap,
+  simulateCpuVsCpuMatch,
   transitionVetoState,
   getExpectedVetoStep,
-  TOURNAMENT_MAPS
+  TOURNAMENT_MAPS,
+  initializeMajorTournament,
+  simulateSwissStageToCompletion,
+  completeCurrentSwissStage,
+  advanceToNextMajorStage,
+  recordPlayoffMatchResult
 } from './tournamentEngine';
 import { MapVetoState } from '../types/tournament';
 
@@ -304,6 +310,218 @@ describe('Tournament Engine Tests', () => {
       expect(() => {
         transitionVetoState(state, TOURNAMENT_MAPS[0].id, TOURNAMENT_MAPS[0].name);
       }).toThrow();
+    });
+
+    it('BO5 veto sequence: 2 bans, 4 picks, 7th map becomes Map 5 automatically', () => {
+      let state: MapVetoState = {
+        format: 'BO5',
+        bannedMaps: [],
+        pickedMaps: [],
+        history: [],
+        currentTurn: 'user_ban'
+      };
+
+      const maps = TOURNAMENT_MAPS;
+      // 1. P1 bans
+      state = transitionVetoState(state, maps[0].id, maps[0].name);
+      expect(state.currentTurn).toBe('cpu_ban');
+      // 2. P2 bans
+      state = transitionVetoState(state, maps[1].id, maps[1].name);
+      expect(state.currentTurn).toBe('user_pick');
+      // 3. P1 picks Map 1
+      state = transitionVetoState(state, maps[2].id, maps[2].name);
+      expect(state.currentTurn).toBe('cpu_pick');
+      // 4. P2 picks Map 2
+      state = transitionVetoState(state, maps[3].id, maps[3].name);
+      expect(state.currentTurn).toBe('user_pick');
+      // 5. P1 picks Map 3
+      state = transitionVetoState(state, maps[4].id, maps[4].name);
+      expect(state.currentTurn).toBe('cpu_pick');
+      // 6. P2 picks Map 4 -> Map 5 assigned automatically
+      state = transitionVetoState(state, maps[5].id, maps[5].name);
+
+      expect(state.currentTurn).toBe('completed');
+      expect(state.bannedMaps).toEqual([maps[0].id, maps[1].id]);
+      expect(state.pickedMaps).toHaveLength(5);
+      expect(state.pickedMaps).toEqual([
+        maps[2].id,
+        maps[3].id,
+        maps[4].id,
+        maps[5].id,
+        maps[6].id
+      ]);
+      expect(state.deciderMap).toBe(maps[6].id);
+    });
+  });
+
+  // ==========================================
+  // SECTION 3: FULL 4-STAGE MAJOR PROGRESSION TESTS
+  // ==========================================
+  describe('Full 4-Stage Major Tournament Progression', () => {
+    it('executes complete Stage 1 -> Stage 2 -> Stage 3 -> Playoffs (QF, SF, BO5 GF) progression and preserves state across JSON serialization', () => {
+      // 1. Initialize Major at Stage 1 with 16 teams
+      let major = initializeMajorTournament('major_test_1', 'Meu Time', dummyLineup, 92, { mirage: 5 }, 777);
+      expect(major.machineState).toBe('stage1_active');
+      expect(major.activeStageId).toBe('stage1');
+      expect(major.stages.stage1.teams).toHaveLength(16);
+      expect(new Set(major.stages.stage1.teams.map(t => t.id)).size).toBe(16);
+      expect(major.stages.stage2).toBeUndefined();
+      expect(major.stages.stage3).toBeUndefined();
+      expect(major.playoffs).toBeUndefined();
+
+      // 2. Simulate Stage 1 to completion: 8 qualifiers and 8 eliminations
+      const s1Done = simulateSwissStageToCompletion(major.stages.stage1);
+      major = {
+        ...major,
+        stages: { ...major.stages, stage1: s1Done }
+      };
+      major = completeCurrentSwissStage(major);
+      expect(major.machineState).toBe('stage1_complete');
+
+      const s1Quals = major.stages.stage1.teams.filter(t => t.status === 'qualified');
+      const s1Elims = major.stages.stage1.teams.filter(t => t.status === 'eliminated');
+      expect(s1Quals).toHaveLength(8);
+      expect(s1Elims).toHaveLength(8);
+      expect(s1Quals.every(t => t.wins === 3)).toBe(true);
+      expect(s1Elims.every(t => t.losses === 3)).toBe(true);
+
+      // 3. Advance to Stage 2: 8 Stage 1 qualifiers + 8 new Stage 2 entrants = 16 unique teams
+      major = advanceToNextMajorStage(major);
+      expect(major.machineState).toBe('stage2_active');
+      expect(major.activeStageId).toBe('stage2');
+      expect(major.stages.stage2).toBeDefined();
+      const s2Teams = major.stages.stage2!.teams;
+      expect(s2Teams).toHaveLength(16);
+      expect(new Set(s2Teams.map(t => t.id)).size).toBe(16);
+
+      // Verify all 8 Stage 1 qualifiers are in Stage 2 and no Stage 1 eliminated team re-entered
+      const s2Ids = new Set(s2Teams.map(t => t.id));
+      s1Quals.forEach(q => expect(s2Ids.has(q.id)).toBe(true));
+      s1Elims.forEach(e => expect(s2Ids.has(e.id)).toBe(false));
+      major.entryPools.stage2TeamIds.forEach(id => expect(s2Ids.has(id)).toBe(true));
+
+      // Verify Stage 1 standings remain preserved
+      expect(major.stages.stage1.teams.filter(t => t.status === 'qualified')).toHaveLength(8);
+
+      // 4. Simulate Stage 2 to completion: 8 qualifiers and 8 eliminations
+      const s2Done = simulateSwissStageToCompletion(major.stages.stage2!);
+      major = {
+        ...major,
+        stages: { ...major.stages, stage2: s2Done }
+      };
+      major = completeCurrentSwissStage(major);
+      expect(major.machineState).toBe('stage2_complete');
+
+      const s2Quals = major.stages.stage2!.teams.filter(t => t.status === 'qualified');
+      const s2Elims = major.stages.stage2!.teams.filter(t => t.status === 'eliminated');
+      expect(s2Quals).toHaveLength(8);
+      expect(s2Elims).toHaveLength(8);
+
+      // 5. Advance to Stage 3: 8 Stage 2 qualifiers + 8 new Stage 3 entrants = 16 unique teams
+      major = advanceToNextMajorStage(major);
+      expect(major.machineState).toBe('stage3_active');
+      expect(major.activeStageId).toBe('stage3');
+      expect(major.stages.stage3).toBeDefined();
+      const s3Teams = major.stages.stage3!.teams;
+      expect(s3Teams).toHaveLength(16);
+      expect(new Set(s3Teams.map(t => t.id)).size).toBe(16);
+
+      const s3Ids = new Set(s3Teams.map(t => t.id));
+      s2Quals.forEach(q => expect(s3Ids.has(q.id)).toBe(true));
+      s2Elims.forEach(e => expect(s3Ids.has(e.id)).toBe(false));
+      s1Elims.forEach(e => expect(s3Ids.has(e.id)).toBe(false));
+      major.entryPools.stage3TeamIds.forEach(id => expect(s3Ids.has(id)).toBe(true));
+
+      // 6. Simulate Stage 3 to completion: 8 playoff qualifiers
+      const s3Done = simulateSwissStageToCompletion(major.stages.stage3!);
+      major = {
+        ...major,
+        stages: { ...major.stages, stage3: s3Done }
+      };
+      major = completeCurrentSwissStage(major);
+      expect(major.machineState).toBe('stage3_complete');
+
+      const s3Quals = major.stages.stage3!.teams.filter(t => t.status === 'qualified');
+      expect(s3Quals).toHaveLength(8);
+
+      // 7. Advance to Playoffs: Quarterfinals have 8 teams across 4 BO3 matches, Semifinals not generated yet
+      major = advanceToNextMajorStage(major);
+      expect(major.machineState).toBe('playoffs_active');
+      expect(major.activeStageId).toBe('playoffs');
+      expect(major.playoffs).toBeDefined();
+      expect(major.playoffs!.seededTeams).toHaveLength(8);
+      expect(major.playoffs!.quarterfinals).toHaveLength(4);
+      expect(major.playoffs!.quarterfinals.every(q => q.format === 'BO3')).toBe(true);
+      expect(major.playoffs!.semifinals[0].team1).toBeUndefined();
+      expect(major.champion).toBeUndefined();
+
+      // Simulate Quarterfinals (4 BO3 matches)
+      major.playoffs!.quarterfinals.forEach((qf, idx) => {
+        const completedQf = simulateCpuVsCpuMatch(
+          qf.match!,
+          [qf.team1!, qf.team2!],
+          major.seed + 500 + idx * 31
+        );
+        major = recordPlayoffMatchResult(major, completedQf);
+      });
+
+      // 8. Verify Semifinals contain the 4 quarterfinal winners along the exact bracket path (QF1vQF2, QF3vQF4)
+      expect(major.playoffs!.currentRound).toBe('semifinals');
+      const qfWinners = major.playoffs!.quarterfinals.map(q => q.match!.winnerId!);
+      expect(qfWinners).toHaveLength(4);
+      const sf1Teams = [major.playoffs!.semifinals[0].team1!.id, major.playoffs!.semifinals[0].team2!.id];
+      const sf2Teams = [major.playoffs!.semifinals[1].team1!.id, major.playoffs!.semifinals[1].team2!.id];
+      expect(sf1Teams).toContain(qfWinners[0]);
+      expect(sf1Teams).toContain(qfWinners[1]);
+      expect(sf2Teams).toContain(qfWinners[2]);
+      expect(sf2Teams).toContain(qfWinners[3]);
+      expect(major.playoffs!.grandFinal.team1).toBeUndefined();
+      expect(major.champion).toBeUndefined();
+
+      // Simulate Semifinals (2 BO3 matches)
+      major.playoffs!.semifinals.forEach((sf, idx) => {
+        const completedSf = simulateCpuVsCpuMatch(
+          sf.match!,
+          [sf.team1!, sf.team2!],
+          major.seed + 700 + idx * 41
+        );
+        major = recordPlayoffMatchResult(major, completedSf);
+      });
+
+      // 9. Verify Grand Final contains the 2 semifinal winners and is BO5
+      expect(major.playoffs!.currentRound).toBe('grand_final');
+      const sfWinners = major.playoffs!.semifinals.map(s => s.match!.winnerId!);
+      const gfTeams = [major.playoffs!.grandFinal.team1!.id, major.playoffs!.grandFinal.team2!.id];
+      expect(gfTeams).toContain(sfWinners[0]);
+      expect(gfTeams).toContain(sfWinners[1]);
+      expect(major.playoffs!.grandFinal.format).toBe('BO5');
+      expect(major.champion).toBeUndefined(); // Champion not declared before Grand Final completes
+
+      // Simulate Grand Final (BO5)
+      const gfSlot = major.playoffs!.grandFinal;
+      const completedGf = simulateCpuVsCpuMatch(
+        gfSlot.match!,
+        [gfSlot.team1!, gfSlot.team2!],
+        major.seed + 999
+      );
+      expect(completedGf.format).toBe('BO5');
+      expect(completedGf.mapResults.length).toBeGreaterThanOrEqual(3);
+      expect(completedGf.mapResults.length).toBeLessThanOrEqual(5);
+
+      major = recordPlayoffMatchResult(major, completedGf);
+
+      // 10. Champion declared only after BO5 final, and serialization preserves full tournament history
+      expect(major.machineState).toBe('tournament_complete');
+      expect(major.champion?.id).toBe(completedGf.winnerId);
+      expect(major.runnerUp?.id).toBe(completedGf.loserId);
+
+      // Test browser refresh persistence via JSON serialize/deserialize
+      const restored = JSON.parse(JSON.stringify(major));
+      expect(restored.machineState).toBe('tournament_complete');
+      expect(restored.stages.stage1.teams).toHaveLength(16);
+      expect(restored.stages.stage2.teams).toHaveLength(16);
+      expect(restored.stages.stage3.teams).toHaveLength(16);
+      expect(restored.champion.id).toBe(major.champion?.id);
     });
   });
 });

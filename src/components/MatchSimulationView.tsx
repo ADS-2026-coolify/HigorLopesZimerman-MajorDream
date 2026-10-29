@@ -130,10 +130,11 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
     (liveRoundIndex >= (currentMapResult?.rounds.length || 999) && currentMapResult?.winner === 'opponent' ? 1 : 0);
 
   const isMapFinished = currentMapResult !== null && liveRoundIndex >= currentMapResult.rounds.length;
+  const targetSeriesWins = match.format === 'BO5' ? 3 : match.format === 'BO3' ? 2 : 1;
 
   const isSeriesDecided = match.format === 'BO1'
     ? isMapFinished
-    : userMapsWon >= 2 || oppMapsWon >= 2 || (isMapFinished && currentMapIndex >= mapsToPlay.length - 1);
+    : userMapsWon >= targetSeriesWins || oppMapsWon >= targetSeriesWins || (isMapFinished && currentMapIndex >= mapsToPlay.length - 1);
 
   // Advance single round manually
   const handleNextRound = () => {
@@ -214,7 +215,11 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
             <span>Mapa: {activeMapMeta.name}</span>
           </div>
           <div>
-            {match.format === 'BO3' ? `Série BO3 (${userMapsWon} - ${oppMapsWon})` : 'Formato BO1'}
+            {match.format === 'BO5'
+              ? `Final BO5 (${userMapsWon} - ${oppMapsWon})`
+              : match.format === 'BO3'
+              ? `Série BO3 (${userMapsWon} - ${oppMapsWon})`
+              : 'Formato BO1'}
           </div>
         </div>
 
