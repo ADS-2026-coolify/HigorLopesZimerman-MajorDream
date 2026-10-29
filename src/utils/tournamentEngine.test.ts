@@ -523,5 +523,46 @@ describe('Tournament Engine Tests', () => {
       expect(restored.stages.stage3.teams).toHaveLength(16);
       expect(restored.champion.id).toBe(major.champion?.id);
     });
+
+    it('never repeats the same matchup within the same Swiss stage, and resets matchup history on next stage', () => {
+      for (let s = 1; s <= 15; s++) {
+        let major = initializeMajorTournament('no-rematch-test', 'Dream V', mockRoster, 90, {}, s * 97);
+
+        // Stage 1
+        const s1 = simulateSwissStageToCompletion(major.stages.stage1);
+        const s1Pairs = new Set<string>();
+        s1.completedMatches.forEach(m => {
+          const pairKey = [m.team1Id, m.team2Id].sort().join('_vs_');
+          expect(s1Pairs.has(pairKey)).toBe(false);
+          s1Pairs.add(pairKey);
+        });
+
+        major = completeCurrentSwissStage({ ...major, stages: { ...major.stages, stage1: s1 } });
+        major = advanceToNextMajorStage(major);
+
+        // Stage 2 (history resets for the new stage, but no rematches within Stage 2)
+        expect(major.stages.stage2!.completedMatches).toHaveLength(0);
+        const s2 = simulateSwissStageToCompletion(major.stages.stage2!);
+        const s2Pairs = new Set<string>();
+        s2.completedMatches.forEach(m => {
+          const pairKey = [m.team1Id, m.team2Id].sort().join('_vs_');
+          expect(s2Pairs.has(pairKey)).toBe(false);
+          s2Pairs.add(pairKey);
+        });
+
+        major = completeCurrentSwissStage({ ...major, stages: { ...major.stages, stage2: s2 } });
+        major = advanceToNextMajorStage(major);
+
+        // Stage 3 (history resets for Stage 3, and no rematches within Stage 3)
+        expect(major.stages.stage3!.completedMatches).toHaveLength(0);
+        const s3 = simulateSwissStageToCompletion(major.stages.stage3!);
+        const s3Pairs = new Set<string>();
+        s3.completedMatches.forEach(m => {
+          const pairKey = [m.team1Id, m.team2Id].sort().join('_vs_');
+          expect(s3Pairs.has(pairKey)).toBe(false);
+          s3Pairs.add(pairKey);
+        });
+      }
+    });
   });
 });

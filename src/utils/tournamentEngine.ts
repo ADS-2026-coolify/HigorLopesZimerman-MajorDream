@@ -194,12 +194,34 @@ export function initialize16Teams(
 }
 
 /**
+ * Find a valid rematch-free perfect matching for an even list of teams using recursive backtracking.
+ * Returns null only if no rematch-free perfect matching exists for this subset.
+ */
+function findRematchFreePairs(
+  pool: TournamentTeam[],
+  pastPairs: Set<string>
+): Array<[TournamentTeam, TournamentTeam]> | null {
+  if (pool.length === 0) return [];
+  const first = pool[0];
+  for (let i = 1; i < pool.length; i++) {
+    const candidate = pool[i];
+    if (!pastPairs.has(`${first.id}_${candidate.id}`)) {
+      const remaining = pool.filter((_, idx) => idx !== 0 && idx !== i);
+      const subResult = findRematchFreePairs(remaining, pastPairs);
+      if (subResult !== null) {
+        return [[first, candidate], ...subResult];
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Generate Swiss Pairings for the current round
  * - Group active teams by (wins, losses)
- * - Pair within the same record group
- * - Prevent repeat rematches across the tournament
+ * - Pair within the same record group using backtracking so no team ever repeats a matchup in the same stage
+ * - History (`pastMatches`) is scoped to the current stage and resets when advancing to Stage 2 or Stage 3
  * - Never pair user team with itself
- * - If group has odd count, float 1 team to neighbor group
  */
 export function generateSwissPairings(
   teams: TournamentTeam[],
@@ -222,8 +244,6 @@ export function generateSwissPairings(
     groups[key].push(t);
   });
 
-  const pairings: TournamentMatch[] = [];
-  const assigned = new Set<string>();
   const rng = seededRandom(seed + roundNumber * 7919);
 
   // Sort group keys in standard order (e.g. 2-0, 1-1, 0-2)
@@ -234,52 +254,36 @@ export function generateSwissPairings(
     return lA - lB;
   });
 
+  // Shuffle each record group deterministically first, then try group-by-group backtracking
+  const orderedTeams: TournamentTeam[] = [];
+  const pairings: TournamentMatch[] = [];
+  let allGroupsSolvedCleanly = true;
   let floatingTeams: TournamentTeam[] = [];
 
   for (let gIdx = 0; gIdx < groupKeys.length; gIdx++) {
     const key = groupKeys[gIdx];
     const isLastGroup = gIdx === groupKeys.length - 1;
-    let pool = [
-      ...floatingTeams,
-      ...deterministicShuffle(groups[key].filter(t => !assigned.has(t.id)), rng)
-    ];
+    const shuffledGroup = deterministicShuffle(groups[key], rng);
+    orderedTeams.push(...shuffledGroup);
+
+    const pool = [...floatingTeams, ...shuffledGroup];
     floatingTeams = [];
 
-    // If pool has odd number of teams and not the last group, float the last one to the next group
     if (pool.length % 2 !== 0 && !isLastGroup) {
       floatingTeams.push(pool.pop()!);
     }
 
-    // Pair greedily avoiding rematches
-    while (pool.length >= 2) {
-      const teamA = pool.shift()!;
-      let partnerIndex = -1;
+    const groupPairs = findRematchFreePairs(pool, pastPairs);
+    if (!groupPairs) {
+      allGroupsSolvedCleanly = false;
+      break;
+    }
 
-      for (let i = 0; i < pool.length; i++) {
-        const candidate = pool[i];
-        if (!pastPairs.has(`${teamA.id}_${candidate.id}`)) {
-          partnerIndex = i;
-          break;
-        }
-      }
-
-      // If no candidate avoids rematch, pick the first
-      if (partnerIndex === -1) {
-        partnerIndex = 0;
-      }
-
-      const teamB = pool.splice(partnerIndex, 1)[0];
-      assigned.add(teamA.id);
-      assigned.add(teamB.id);
-
-      // Match format derived from highest-stakes record of the pair
+    for (const [teamA, teamB] of groupPairs) {
       const formatA = getMatchFormat(teamA.wins, teamA.losses);
       const formatB = getMatchFormat(teamB.wins, teamB.losses);
       const format = formatA === 'BO3' || formatB === 'BO3' ? 'BO3' : 'BO1';
-
-      // Always put user team as team1 if present for convenient UI
       const [t1, t2] = teamB.isUser ? [teamB, teamA] : [teamA, teamB];
-
       pairings.push({
         id: `match_r${roundNumber}_${t1.id}_vs_${t2.id}`,
         roundNumber,
@@ -290,31 +294,31 @@ export function generateSwissPairings(
         mapResults: []
       });
     }
-
-    if (pool.length > 0) {
-      floatingTeams.push(...pool);
-    }
   }
 
-  // Safety fallback: pair any remaining unassigned active teams in pairs
-  const unpaired = activeTeams.filter(t => !assigned.has(t.id));
-  while (unpaired.length >= 2) {
-    const teamA = unpaired.shift()!;
-    const teamB = unpaired.shift()!;
-    assigned.add(teamA.id);
-    assigned.add(teamB.id);
-    const formatA = getMatchFormat(teamA.wins, teamA.losses);
-    const formatB = getMatchFormat(teamB.wins, teamB.losses);
-    const format = formatA === 'BO3' || formatB === 'BO3' ? 'BO3' : 'BO1';
-    const [t1, t2] = teamB.isUser ? [teamB, teamA] : [teamA, teamB];
-    pairings.push({
-      id: `match_r${roundNumber}_${t1.id}_vs_${t2.id}`,
-      roundNumber,
-      team1Id: t1.id,
-      team2Id: t2.id,
-      format,
-      status: 'pending_veto',
-      mapResults: []
+  if (allGroupsSolvedCleanly && pairings.length * 2 === activeTeams.length) {
+    return pairings;
+  }
+
+  // Global backtracking fallback across all active teams ordered by Swiss record
+  // (Handles rare cases where two teams in a small group already played each other and must float to an adjacent group)
+  const fullOrdered = groupKeys.flatMap(k => deterministicShuffle(groups[k], rng));
+  const globalPairs = findRematchFreePairs(fullOrdered, pastPairs);
+  if (globalPairs) {
+    return globalPairs.map(([teamA, teamB]) => {
+      const formatA = getMatchFormat(teamA.wins, teamA.losses);
+      const formatB = getMatchFormat(teamB.wins, teamB.losses);
+      const format = formatA === 'BO3' || formatB === 'BO3' ? 'BO3' : 'BO1';
+      const [t1, t2] = teamB.isUser ? [teamB, teamA] : [teamA, teamB];
+      return {
+        id: `match_r${roundNumber}_${t1.id}_vs_${t2.id}`,
+        roundNumber,
+        team1Id: t1.id,
+        team2Id: t2.id,
+        format,
+        status: 'pending_veto',
+        mapResults: []
+      };
     });
   }
 
