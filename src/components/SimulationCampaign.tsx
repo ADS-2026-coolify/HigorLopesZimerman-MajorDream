@@ -43,22 +43,8 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
   onUpdateCampaign,
   onRestart
 }) => {
-  const STORAGE_KEY = `draftarena_major_v2_${campaign.campaignId}`;
-
-  // Initialize or restore full 4-stage Major tournament state
+  // Initialize full 4-stage Major tournament state in memory (fresh on page reload)
   const [major, setMajor] = useState<MajorTournamentState>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.machineState && parsed.stages?.stage1) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error('Failed to parse saved Major state', e);
-      }
-    }
-
     const initialSeed = Date.now();
     return initializeMajorTournament(
       campaign.campaignId,
@@ -75,28 +61,9 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
   const [selectedNavStage, setSelectedNavStage] = useState<MajorStageId>(() => major.activeStageId);
 
   // Sub-view inside the active stage: 'standings' | 'veto' | 'match'
-  const [activeView, setActiveView] = useState<'standings' | 'veto' | 'match'>(() => {
-    if (
-      major.machineState === 'stage1_complete' ||
-      major.machineState === 'stage2_complete' ||
-      major.machineState === 'stage3_complete' ||
-      major.machineState === 'tournament_complete'
-    ) {
-      return 'standings';
-    }
-    const currentStage = major.activeStageId !== 'playoffs' ? major.stages[major.activeStageId] : undefined;
-    if (currentStage && currentStage.userStatus !== 'active') {
-      return 'standings';
-    }
-    return 'veto';
-  });
+  const [activeView, setActiveView] = useState<'standings' | 'veto' | 'match'>('veto');
 
   const [activeMapsForMatch, setActiveMapsForMatch] = useState<string[]>([]);
-
-  // Persist Major tournament state on every change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(major));
-  }, [major, STORAGE_KEY]);
 
   // Keep selectedNavStage synced when activeStageId advances
   useEffect(() => {

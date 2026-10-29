@@ -12,101 +12,29 @@ import { CampaignState, Player } from './types';
 import { calculateTeamOvr, calculateSynergy } from './utils/simulationEngine';
 import { resetDraftMapSession } from './utils/mapProficiency';
 
-const ACTIVE_CAMPAIGN_KEY = 'draftarena_active_campaign_v2';
-
-function recoverSavedCampaign(): CampaignState | null {
-  try {
-    const saved = localStorage.getItem(ACTIVE_CAMPAIGN_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.campaignId && Array.isArray(parsed.lineup) && parsed.lineup.length === 5) {
-        return parsed;
-      }
-    }
-
-    // Fallback: recover the latest saved Major tournament from localStorage (`draftarena_major_v2_*`)
-    let latestMajor: any = null;
-    let latestTimestamp = -1;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('draftarena_major_v2_')) {
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        const parsedMajor = JSON.parse(raw);
-        if (parsedMajor && parsedMajor.tournamentId && parsedMajor.userTeamBase?.roster?.length === 5) {
-          const ts = Number(String(parsedMajor.tournamentId).replace('camp_', '')) || 0;
-          if (ts > latestTimestamp) {
-            latestTimestamp = ts;
-            latestMajor = parsedMajor;
-          }
-        }
-      }
-    }
-
-    if (latestMajor) {
-      const uBase = latestMajor.userTeamBase;
-      const activeStage =
-        latestMajor.activeStageId !== 'playoffs'
-          ? latestMajor.stages?.[latestMajor.activeStageId]
-          : latestMajor.stages?.stage3;
-      const uInStage = activeStage?.teams?.find((t: any) => t.id === 'user-team');
-      const recovered: CampaignState = {
-        campaignId: latestMajor.tournamentId,
-        teamName: uBase.name || 'Meu Time',
-        lineup: uBase.roster,
-        overallOvr: uBase.ovr || calculateTeamOvr(uBase.roster),
-        synergy: calculateSynergy(uBase.roster),
-        mapPoints: {},
-        baseProficiencies: uBase.mapProficiencies,
-        swissRound: activeStage?.currentRound || 1,
-        userWins: uInStage?.wins ?? 0,
-        userLosses: uInStage?.losses ?? 0,
-        swissMatches: [],
-        isSwissFinished: latestMajor.activeStageId === 'playoffs' || latestMajor.machineState === 'tournament_complete',
-        isQualifiedForPlayoffs: !!latestMajor.playoffs?.seededTeams?.some((t: any) => t.id === 'user-team'),
-        playoffStage: 'none',
-        playoffMatches: [],
-        isChampion: latestMajor.champion?.id === 'user-team',
-        isInvictus: false,
-        majorMvp: null,
-        status: latestMajor.machineState === 'tournament_complete' ? 'completed' : 'swiss'
-      };
-      localStorage.setItem(ACTIVE_CAMPAIGN_KEY, JSON.stringify(recovered));
-      return recovered;
-    }
-  } catch (e) {
-    console.error('Failed to restore active campaign', e);
-  }
-  return null;
-}
-
 export const AppContent: React.FC = () => {
-  // Restore active campaign on page load/HMR if one is in progress
-  const [activeCampaign, setActiveCampaign] = useState<CampaignState | null>(() => recoverSavedCampaign());
-
-  const [currentTab, setCurrentTab] = useState<NavTab>(() => (activeCampaign ? 'draft' : 'home'));
+  // Fresh state on every page load/refresh (just like 12a0.com)
+  const [currentTab, setCurrentTab] = useState<NavTab>('home');
+  const [activeCampaign, setActiveCampaign] = useState<CampaignState | null>(null);
   const [campaignHistory, setCampaignHistory] = useState<CampaignState[]>([]);
 
-  // Persist active campaign so refreshes or HMR never lose tournament progress
-  React.useEffect(() => {
-    if (activeCampaign) {
-      localStorage.setItem(ACTIVE_CAMPAIGN_KEY, JSON.stringify(activeCampaign));
-    } else {
-      localStorage.removeItem(ACTIVE_CAMPAIGN_KEY);
-    }
-  }, [activeCampaign]);
-
   const clearSavedMajors = () => {
-    localStorage.removeItem(ACTIVE_CAMPAIGN_KEY);
+    localStorage.removeItem('draftarena_active_campaign');
+    localStorage.removeItem('draftarena_active_campaign_v2');
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith('draftarena_major_v2_')) {
+      if (k && (k.startsWith('draftarena_major_') || k.startsWith('draftarena_swiss_'))) {
         keysToRemove.push(k);
       }
     }
     keysToRemove.forEach(k => localStorage.removeItem(k));
   };
+
+  // Clear any existing stored campaign from localStorage to guarantee fresh start on F5
+  React.useEffect(() => {
+    clearSavedMajors();
+  }, []);
 
   // Start new draft
   const handleStartDraft = () => {
