@@ -1,3 +1,4 @@
+/* Hallmark · redesign: full · keep map point allocation, proficiency engine, sound · semantic tokens */
 import React, { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { ACTIVE_MAPS } from '../data/csData';
@@ -70,24 +71,21 @@ export const MapAdvantage: React.FC<MapAdvantageProps> = ({ onConfirm, onBack })
   return (
     <div className="space-y-8 pb-16 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-cs-border text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider">
-          <span>{t('maps.title')}</span>
-        </div>
-        <h2 className="font-display font-black text-3xl text-white uppercase tracking-wide">
+      <div className="bg-cs-surface p-6 rounded-2xl border border-cs-border text-center space-y-3">
+        <h2 className="font-display font-black text-3xl text-white">
           {t('maps.title')}
         </h2>
-        <p className="text-slate-300 text-sm max-w-lg mx-auto">
+        <p className="text-cs-muted text-sm max-w-lg mx-auto">
           {t('maps.desc')}
         </p>
 
         {/* Counter */}
         <div className="pt-2">
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl bg-cs-surface border border-cs-border">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl bg-cs-card border border-cs-border">
+            <span className="text-xs font-semibold text-cs-muted">
               {t('maps.remainingPoints')}:
             </span>
-            <span className={`font-display font-black text-2xl ${remainingPoints === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+            <span className={`font-display font-black text-2xl ${remainingPoints === 0 ? 'text-cs-green' : 'text-cs-accent'}`}>
               {remainingPoints}
             </span>
           </div>
@@ -107,17 +105,17 @@ export const MapAdvantage: React.FC<MapAdvantageProps> = ({ onConfirm, onBack })
             <div
               key={m.id}
               className={`
-                relative overflow-hidden rounded-xl border p-4 transition-all duration-300 flex flex-col justify-between
-                ${count > 0 ? 'border-amber-400/80 bg-cs-card' : 'border-cs-border bg-cs-surface/60'}
+                relative overflow-hidden rounded-xl border p-4 transition-colors flex flex-col justify-between
+                ${count > 0 ? 'border-cs-accent bg-cs-card' : 'border-cs-border bg-cs-surface'}
               `}
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono font-bold text-slate-400 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs font-mono font-bold text-cs-muted flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-cs-accent" />
                     {m.activeDuty ? 'Active Duty' : 'Reserva'}
                   </span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded shadow ${tier.badgeBg}`}>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm ${tier.badgeBg}`}>
                     {finalProf}%
                   </span>
                 </div>
@@ -126,14 +124,14 @@ export const MapAdvantage: React.FC<MapAdvantageProps> = ({ onConfirm, onBack })
                   de_{m.name.toLowerCase()}
                 </h3>
 
-                <span className="text-[11px] font-mono text-slate-400 block mt-1">
+                <span className="text-[11px] font-mono text-cs-muted block mt-1">
                   Base: {baseProf}% · {count} pt{count !== 1 ? 's' : ''} ({count > 0 ? `+${count * 5}%` : '+0%'})
                 </span>
 
                 {/* Progress bar */}
-                <div className="w-full h-2 rounded-full bg-slate-800/90 overflow-hidden p-0.5 mt-3">
+                <div className="w-full h-2 rounded-full bg-cs-bg overflow-hidden p-0.5 mt-3">
                   <div
-                    className={`h-full rounded-full ${tier.barGradient} ${tier.glow} transition-all duration-300`}
+                    className={`h-full rounded-full ${tier.barGradient} transition-colors`}
                     style={{ width: `${finalProf}%` }}
                   />
                 </div>
@@ -141,23 +139,25 @@ export const MapAdvantage: React.FC<MapAdvantageProps> = ({ onConfirm, onBack })
 
               {/* Point controls */}
               <div className="flex items-center justify-between mt-5 pt-3 border-t border-cs-border/60">
-                <span className="text-xs text-slate-300 font-mono">
+                <span className="text-xs text-cs-muted font-mono">
                   {count} {t('maps.allocated')}
                 </span>
 
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     disabled={count <= 0}
                     onClick={() => handleRemove(m.id)}
-                    className="w-8 h-8 rounded-lg bg-cs-surface hover:bg-cs-border border border-cs-border flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="w-8 h-8 rounded-lg bg-cs-surface hover:bg-cs-border active:scale-[0.98] border border-cs-border flex items-center justify-center text-white disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
 
                   <button
+                    type="button"
                     disabled={remainingPoints <= 0 || isAtMax}
                     onClick={() => handleAdd(m.id)}
-                    className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500 border border-amber-500/40 text-amber-300 hover:text-black flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="w-8 h-8 rounded-lg bg-cs-accent/20 hover:bg-cs-accent active:scale-[0.98] border border-cs-accent/40 text-cs-accent hover:text-black flex items-center justify-center disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -171,26 +171,24 @@ export const MapAdvantage: React.FC<MapAdvantageProps> = ({ onConfirm, onBack })
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
         <button
+          type="button"
           onClick={onBack}
-          className="text-sm font-semibold text-slate-400 hover:text-white px-4 py-2"
+          className="text-sm font-semibold text-cs-muted hover:text-white active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none px-4 py-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
         >
           ← {t('common.back')}
         </button>
 
         <button
+          type="button"
           disabled={remainingPoints > 0}
           onClick={() => {
             sound.playClick();
             onConfirm(points, baseProficiencies);
           }}
-          className={`w-full sm:w-auto px-8 py-4 rounded-xl font-display font-black text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all ${
-            remainingPoints > 0
-              ? 'opacity-40 cursor-not-allowed bg-slate-800 text-slate-500 border border-slate-700'
-              : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black hover:scale-105 cursor-pointer'
-          }`}
+          className="w-full sm:w-auto px-8 py-4 rounded-xl bg-cs-accent hover:bg-cs-accentHover active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-display font-black text-base whitespace-nowrap flex items-center justify-center gap-2 shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
           title={remainingPoints > 0 ? `Distribua todos os pontos (${remainingPoints} restante${remainingPoints > 1 ? 's' : ''})` : t('maps.simulateCampaign')}
         >
-          <span>{remainingPoints > 0 ? `Distribua os Pontos (${remainingPoints} rest.)` : t('maps.simulateCampaign')}</span>
+          <span>{remainingPoints > 0 ? `Faltam ${remainingPoints} pts` : t('maps.simulateCampaign')}</span>
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>

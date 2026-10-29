@@ -1,3 +1,4 @@
+/* Hallmark · redesign: full · keep team configuration, map point allocation, OVR reveal · semantic tokens */
 import React, { useState } from 'react';
 import { Player } from '../types';
 import { ACTIVE_MAPS } from '../data/csData';
@@ -27,14 +28,13 @@ interface FinalResultsViewProps {
   ) => void;
 }
 
-// Compact role badges configuration
 const roleConfigs: Record<string, { label: string; full: string; bgColor: string }> = {
-  igl: { label: 'IGL', full: 'In-Game Leader', bgColor: 'bg-[#1D4ED8]' },
-  awp: { label: 'AWP', full: 'Sniper (AWPer)', bgColor: 'bg-[#7C3AED]' },
-  entry: { label: 'ENT', full: 'Entry Fragger', bgColor: 'bg-[#DC2626]' },
-  rifler: { label: 'RIF', full: 'Rifler', bgColor: 'bg-[#D97706]' },
-  lurker: { label: 'LURK', full: 'Lurker', bgColor: 'bg-[#0D9488]' },
-  support: { label: 'SUP', full: 'Support', bgColor: 'bg-[#4F46E5]' },
+  igl: { label: 'IGL', full: 'In-Game Leader', bgColor: 'bg-blue-700' },
+  awp: { label: 'AWP', full: 'Sniper (AWPer)', bgColor: 'bg-violet-700' },
+  entry: { label: 'ENT', full: 'Entry Fragger', bgColor: 'bg-red-700' },
+  rifler: { label: 'RIF', full: 'Rifler', bgColor: 'bg-amber-700' },
+  lurker: { label: 'LURK', full: 'Lurker', bgColor: 'bg-teal-700' },
+  support: { label: 'SUP', full: 'Support', bgColor: 'bg-indigo-700' },
 };
 
 export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
@@ -75,17 +75,16 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
   const synergy = calculateSynergy(lineup);
 
   const getOvrColor = (ovr: number) => {
-    if (ovr >= 95) return 'text-amber-400';
+    if (ovr >= 95) return 'text-cs-accent';
     if (ovr >= 90) return 'text-purple-400';
-    if (ovr >= 85) return 'text-sky-400';
-    return 'text-emerald-400';
+    if (ovr >= 85) return 'text-cs-blue';
+    return 'text-cs-green';
   };
 
   const handleAddPoint = (mapId: string) => {
     if (remainingPoints <= 0) return;
     const currentCount = points[mapId] || 0;
     const base = baseProficiencies[mapId] ?? 50;
-    // Enforce 100% max limit: do not allow adding points if it would exceed 100%
     if (base + (currentCount + 1) * 5 > 100) return;
 
     sound.playClick();
@@ -159,27 +158,25 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
 
   return (
     <div className="space-y-8 pb-16 max-w-7xl mx-auto w-full px-2 sm:px-4">
-      {/* ========================================================================= */}
-      {/* TOP SECTION: 2 PANELS (LEFT: Summary & Config | RIGHT: Completed Roster)  */}
-      {/* ========================================================================= */}
+      {/* TOP SECTION: 2 PANELS (LEFT: Summary & Config | RIGHT: Completed Roster) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* PANEL A: LEFT PANEL (Team Summary & Configuration - 5 cols) */}
-        <div className="lg:col-span-5 glass-panel p-6 sm:p-7 rounded-2xl border border-cs-border flex flex-col justify-between space-y-6">
+        <div className="lg:col-span-5 bg-cs-surface p-6 sm:p-7 rounded-2xl border border-cs-border flex flex-col justify-between space-y-6">
           <div className="space-y-5">
             {/* Completion indicator */}
-            <div className="flex items-center justify-between border-b border-cs-border/60 pb-3">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                <Check className="w-4 h-4 text-emerald-400" />
-                Escalação Completa
+            <div className="flex items-center justify-between border-b border-cs-border pb-3">
+              <span className="text-xs font-semibold text-cs-green flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-cs-green" />
+                Escalação completa
               </span>
-              <span className="text-xs text-slate-400 font-mono">5 / 5 Jogadores</span>
+              <span className="text-xs text-cs-muted font-semibold">5 / 5 jogadores</span>
             </div>
 
             {/* Editable Team Name */}
             <div className="space-y-1.5 text-left">
-              <label htmlFor="team-name-input" className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                Nome da Equipe
+              <label htmlFor="team-name-input" className="block text-xs font-semibold text-cs-muted">
+                Nome da equipe
               </label>
               <input
                 id="team-name-input"
@@ -189,12 +186,12 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                 onChange={handleNameChange}
                 placeholder="Ex: Made in Brazil, Luminosity..."
                 className={`
-                  w-full px-4 py-3 rounded-xl bg-[#090D16] border text-white font-display font-black text-xl tracking-wide placeholder-slate-600 focus:outline-none transition-all
-                  ${nameError ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' : 'border-cs-border focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20'}
+                  w-full px-4 py-3 rounded-xl bg-cs-bg border text-white font-display font-black text-xl placeholder-cs-muted focus:outline-none transition-colors
+                  ${nameError ? 'border-cs-red focus:ring-2 focus:ring-cs-red/50' : 'border-cs-border focus:border-cs-accent focus:ring-2 focus:ring-cs-accent/30'}
                 `}
               />
               {nameError && (
-                <p className="text-xs text-red-400 flex items-center gap-1 mt-1 font-mono">
+                <p className="text-xs text-cs-red flex items-center gap-1 mt-1">
                   <AlertCircle className="w-3.5 h-3.5" />
                   {nameError}
                 </p>
@@ -202,25 +199,25 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
             </div>
 
             {/* Prominent Team Overall Display */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#090D16] to-[#121B2D] border border-cs-border/80 p-6 text-center relative overflow-hidden shadow-inner">
-              <span className="text-xs uppercase font-mono font-bold text-slate-400 tracking-widest block mb-1">
-                Overall Geral do Time
+            <div className="rounded-2xl bg-cs-card border border-cs-border p-6 text-center relative overflow-hidden">
+              <span className="text-xs font-semibold text-cs-muted block mb-1">
+                Overall geral do time
               </span>
               <div className={`font-display font-black text-6xl md:text-7xl tracking-tight ${getOvrColor(teamOvr)}`}>
                 {teamOvr}
               </div>
-              <p className="text-[11px] text-slate-500 mt-2 font-mono">
+              <p className="text-[11px] text-cs-muted mt-2">
                 Média dos ratings oficiais com cálculo de sinergia
               </p>
             </div>
 
             {/* Synergy & Composition Pill */}
-            <div className="p-3.5 rounded-xl bg-cs-surface/80 border border-cs-border text-left flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-cs-card border border-cs-border text-left flex items-center justify-between">
               <div>
-                <span className="text-xs font-mono font-bold text-slate-300 block">
-                  Sinergia de Funções
+                <span className="text-xs font-semibold text-white block">
+                  Sinergia de funções
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-cs-muted">
                   {synergy.type === 'full' 
                     ? 'Composição perfeita de papéis (+2 OVR aplicado)' 
                     : synergy.type === 'broken' 
@@ -228,10 +225,10 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                     : 'Composição padrão'}
                 </span>
               </div>
-              <span className={`px-2.5 py-1 rounded text-xs font-mono font-black uppercase ${
-                synergy.scoreBonus > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
-                synergy.scoreBonus < 0 ? 'bg-red-500/20 text-red-300 border border-red-500/40' :
-                'bg-slate-700/50 text-slate-300 border border-slate-600'
+              <span className={`px-2.5 py-1 rounded text-xs font-bold ${
+                synergy.scoreBonus > 0 ? 'bg-cs-green/20 text-cs-green border border-cs-green/40' :
+                synergy.scoreBonus < 0 ? 'bg-cs-red/20 text-cs-red border border-cs-red/40' :
+                'bg-cs-surface text-cs-muted border border-cs-border'
               }`}>
                 {synergy.scoreBonus >= 0 ? `+${synergy.scoreBonus}` : synergy.scoreBonus} OVR
               </span>
@@ -241,46 +238,46 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
           {/* Primary Action Button (Simulate Campaign) */}
           <div className="space-y-3 pt-2">
             <button
+              type="button"
               disabled={remainingPoints > 0}
               onClick={handleStartCampaign}
-              className={`w-full py-4 px-6 rounded-xl font-display font-black text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl transition-all ${
-                remainingPoints > 0
-                  ? 'opacity-40 cursor-not-allowed bg-slate-800 text-slate-500 border border-slate-700'
-                  : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
-              }`}
+              className="w-full py-4 px-6 rounded-xl bg-cs-accent hover:bg-cs-accentHover active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-display font-black text-base whitespace-nowrap flex items-center justify-center gap-2 shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
               title={remainingPoints > 0 ? `Distribua todos os 10 pontos de mapa (${remainingPoints} restante${remainingPoints > 1 ? 's' : ''})` : 'Avançar para o Major'}
             >
-              <span>{remainingPoints > 0 ? `Distribua os Pontos (${remainingPoints} rest.)` : 'Avançar para o Major'}</span>
+              <span>{remainingPoints > 0 ? `Faltam ${remainingPoints} pts de mapa` : 'Avançar para o Major'}</span>
               <ArrowRight className="w-5 h-5" />
             </button>
 
             {/* Secondary Action (Restart Draft with Confirmation) */}
             {!showRestartConfirm ? (
               <button
+                type="button"
                 onClick={() => setShowRestartConfirm(true)}
-                className="w-full py-2.5 text-xs font-mono uppercase tracking-wider text-slate-400 hover:text-white flex items-center justify-center gap-1.5 rounded-lg hover:bg-cs-surface/60 transition-colors"
+                className="w-full py-2.5 text-xs font-semibold text-cs-muted hover:text-white active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 rounded-lg hover:bg-cs-card transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reiniciar Draft</span>
+                <span>Reiniciar draft</span>
               </button>
             ) : (
-              <div className="p-3 rounded-xl bg-red-950/40 border border-red-700/50 text-center space-y-2">
-                <span className="text-xs text-red-200 block font-mono">
+              <div className="p-3 rounded-xl bg-cs-red/10 border border-cs-red/40 text-center space-y-2">
+                <span className="text-xs text-white block">
                   Descartar este time e começar novo draft?
                 </span>
                 <div className="flex items-center justify-center gap-2">
                   <button
+                    type="button"
                     onClick={() => {
                       sound.playClick();
                       onRestartDraft();
                     }}
-                    className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer"
+                    className="px-4 py-1.5 bg-cs-red hover:bg-red-500 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-bold rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cs-red focus-visible:outline-none"
                   >
                     Sim, reiniciar
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowRestartConfirm(false)}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-cs-card hover:bg-cs-hover active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-cs-text text-xs font-bold rounded-lg border border-cs-border transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                   >
                     Cancelar
                   </button>
@@ -291,14 +288,14 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
         </div>
 
         {/* PANEL B: RIGHT PANEL (Completed Roster List - 7 cols) */}
-        <div className="lg:col-span-7 glass-panel p-6 sm:p-7 rounded-2xl border border-cs-border flex flex-col justify-between space-y-4">
+        <div className="lg:col-span-7 bg-cs-surface p-6 sm:p-7 rounded-2xl border border-cs-border flex flex-col justify-between space-y-4">
           <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-cs-border/60 pb-3">
-              <h3 className="font-display font-black text-lg text-white uppercase tracking-wider text-left">
-                Quinteto Titular Revelado
+            <div className="flex items-center justify-between border-b border-cs-border pb-3">
+              <h3 className="font-display font-black text-lg text-white text-left">
+                Quinteto titular revelado
               </h3>
-              <span className="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider">
-                Overall Revelado
+              <span className="text-xs font-semibold text-cs-accent">
+                Overall revelado
               </span>
             </div>
 
@@ -309,17 +306,17 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                 const roleConfig = roleConfigs[normalizedRole] || {
                   label: normalizedRole.slice(0, 3).toUpperCase(),
                   full: normalizedRole.toUpperCase(),
-                  bgColor: 'bg-[#D97706]'
+                  bgColor: 'bg-amber-700'
                 };
 
                 return (
                   <div
                     key={player.id}
-                    className="p-2.5 sm:p-3 rounded-xl bg-[#090D16]/90 border border-[#1E293B] hover:border-cs-border flex items-center justify-between gap-3 transition-colors select-none"
+                    className="p-2.5 sm:p-3 rounded-xl bg-cs-card border border-cs-border hover:border-cs-accent/50 flex items-center justify-between gap-3 transition-colors select-none"
                   >
                     {/* Player Avatar */}
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-12 rounded-lg overflow-hidden bg-[#1E293B] shrink-0 border border-slate-700">
+                      <div className="w-11 h-12 rounded-lg overflow-hidden bg-cs-surface shrink-0 border border-cs-border">
                         <PlayerAvatar
                           playerId={player.id}
                           nickname={player.nickname}
@@ -335,7 +332,7 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                             {player.nickname}
                           </h4>
                         </div>
-                        <span className="text-[11px] text-slate-400 truncate block">
+                        <span className="text-[11px] text-cs-muted truncate block">
                           {player.teamName} · {player.era}
                         </span>
                       </div>
@@ -344,12 +341,12 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                     {/* Meta: Flag, Role badge & OVR score */}
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                       {/* Nationality Flag */}
-                      <div className="w-7 h-5 rounded overflow-hidden shadow-inner shrink-0 hidden sm:block" title={player.countryName || player.country}>
+                      <div className="w-7 h-5 rounded overflow-hidden shrink-0 hidden sm:block" title={player.countryName || player.country}>
                         <CountryFlag countryCode={player.country} />
                       </div>
 
                       {/* Team Logo */}
-                      <div className="w-7 h-7 rounded bg-[#090D16] border border-[#1E293B] flex items-center justify-center p-0.5 shrink-0" title={player.teamName}>
+                      <div className="w-7 h-7 rounded bg-cs-bg border border-cs-border flex items-center justify-center p-0.5 shrink-0" title={player.teamName}>
                         <TeamLogo
                           teamId={player.teamId}
                           name={player.teamName}
@@ -362,7 +359,7 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
 
                       {/* Role Pill */}
                       <span
-                        className={`px-2.5 py-1 rounded text-[11px] font-mono font-black text-white ${roleConfig.bgColor}`}
+                        className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold text-white ${roleConfig.bgColor}`}
                         title={roleConfig.full}
                       >
                         {roleConfig.label}
@@ -373,7 +370,7 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                         <span className={`font-display font-black text-xl leading-none ${getOvrColor(player.ovr)}`}>
                           {player.ovr}
                         </span>
-                        <span className="text-[9px] uppercase font-mono text-slate-500 block leading-tight">OVR</span>
+                        <span className="text-[10px] font-semibold text-cs-muted block leading-tight">OVR</span>
                       </div>
                     </div>
                   </div>
@@ -382,26 +379,24 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
             </div>
           </div>
 
-          <div className="text-left text-xs text-slate-500 font-mono border-t border-cs-border/60 pt-3">
+          <div className="text-left text-xs text-cs-muted border-t border-cs-border pt-3">
             Dica: No Counter-Strike Major, a sinergia e os overalls dos seus jogadores influenciam o combate em cada rodada da simulação MR12.
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* BOTTOM SECTION: MAP POINT DISTRIBUTION (Spans full available width)       */}
-      {/* ========================================================================= */}
-      <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-cs-border space-y-6 text-left">
+      {/* BOTTOM SECTION: MAP POINT DISTRIBUTION */}
+      <div className="bg-cs-surface p-6 sm:p-7 rounded-2xl border border-cs-border space-y-6 text-left">
         {/* Section Header & Budget Counter */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cs-border/60 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cs-border pb-5">
           <div>
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-amber-400" />
-              <h3 className="font-display font-black text-xl sm:text-2xl text-white uppercase tracking-wider">
-                Vantagem de Mapa
+              <MapPin className="w-4 h-4 text-cs-accent" />
+              <h3 className="font-display font-black text-xl sm:text-2xl text-white">
+                Vantagem de mapa
               </h3>
             </div>
-            <p className="text-xs text-slate-400 mt-1 max-w-xl">
+            <p className="text-xs text-cs-muted mt-1 max-w-xl">
               Distribua seus pontos entre os mapas para obter vantagem tática nos confrontos da fase suíça e playoffs do Major.
             </p>
           </div>
@@ -409,24 +404,25 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
           {/* Budget Counters & Reset */}
           <div className="flex items-center gap-3 shrink-0">
             <button
+              type="button"
               onClick={handleResetPoints}
-              className="text-xs text-slate-400 hover:text-white px-3 py-2 rounded-lg border border-cs-border hover:bg-cs-surface font-mono transition-colors"
+              className="text-xs text-cs-muted hover:text-white active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none px-3 py-2 rounded-lg border border-cs-border hover:bg-cs-card transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
             >
-              Zerar Pontos
+              Zerar pontos
             </button>
 
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#090D16] border border-cs-border">
-              <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                Pontos Restantes:
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-cs-bg border border-cs-border">
+              <span className="text-xs font-semibold text-cs-muted">
+                Pontos restantes:
               </span>
-              <span className={`font-display font-black text-2xl ${remainingPoints === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <span className={`font-display font-black text-2xl ${remainingPoints === 0 ? 'text-cs-green' : 'text-cs-accent'}`}>
                 {remainingPoints} / {TOTAL_POINTS}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Responsive Grid of Map Cards: 2 Rows (4 on first row, 3 on second row) */}
+        {/* Responsive Grid of Map Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {ACTIVE_MAPS.map((map) => {
             const count = points[map.id] || 0;
@@ -439,28 +435,27 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
               <div
                 key={map.id}
                 className={`
-                  relative rounded-2xl border overflow-hidden transition-all duration-200 flex flex-col justify-between
-                  ${count > 0 ? 'border-amber-400/80 bg-[#0E1524] shadow-lg shadow-amber-500/10' : 'border-[#1E293B] bg-[#090D16]/90 hover:border-slate-700'}
+                  relative rounded-2xl border overflow-hidden transition-colors flex flex-col justify-between
+                  ${count > 0 ? 'border-cs-accent bg-cs-card' : 'border-cs-border bg-cs-bg hover:border-cs-accent/50'}
                 `}
               >
                 {/* Landscape Thumbnail with fallback banner */}
-                <div className="relative h-28 sm:h-32 w-full bg-[#121B2D] overflow-hidden">
+                <div className="relative h-28 sm:h-32 w-full bg-cs-bg overflow-hidden">
                   <img
                     src={map.imageBg}
                     alt={map.name}
-                    className="w-full h-full object-cover object-center brightness-75 hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                    className="w-full h-full object-cover object-center brightness-75"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E1524] via-transparent to-black/40 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-cs-card via-transparent to-black/40 pointer-events-none" />
 
                   {/* Active Duty status badge */}
-                  <span className="absolute top-2.5 right-2.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/75 text-slate-300 backdrop-blur-xs border border-white/10">
+                  <span className="absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-cs-bg/90 text-cs-text border border-cs-border">
                     {map.activeDuty ? 'Active Duty' : 'Reserva'}
                   </span>
 
                   {/* Proficiency percentage badge with tier color */}
-                  <span className={`absolute bottom-2.5 left-2.5 text-[11px] font-mono font-black px-2.5 py-0.5 rounded-md shadow-md ${tier.badgeBg}`}>
-                    {finalProf}% Proficiência
+                  <span className={`absolute bottom-2.5 left-2.5 text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-sm ${tier.badgeBg}`}>
+                    {finalProf}% proficiência
                   </span>
                 </div>
 
@@ -468,22 +463,22 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                 <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
-                      <h4 className="font-display font-black text-base text-white tracking-wide truncate">
+                      <h4 className="font-display font-black text-base text-white truncate">
                         de_{map.name.toLowerCase()}
                       </h4>
-                      <span className={`text-sm font-mono font-black ${tier.textColor}`}>
+                      <span className={`text-sm font-mono font-bold ${tier.textColor}`}>
                         {finalProf}%
                       </span>
                     </div>
-                    <span className="text-xs font-mono text-slate-400 block mt-1">
+                    <span className="text-xs font-mono text-cs-muted block mt-1">
                       Base: {baseProf}% · {count} ponto{count !== 1 ? 's' : ''} ({count > 0 ? `+${count * 5}%` : '+0%'})
                     </span>
                   </div>
 
-                  {/* Progress Bar with dynamic progression gradient */}
-                  <div className="w-full h-2 rounded-full bg-slate-800/90 overflow-hidden p-0.5">
+                  {/* Progress Bar */}
+                  <div className="w-full h-2 rounded-full bg-cs-bg overflow-hidden p-0.5">
                     <div
-                      className={`h-full rounded-full ${tier.barGradient} ${tier.glow} transition-all duration-300`}
+                      className={`h-full rounded-full ${tier.barGradient} transition-colors`}
                       style={{ width: `${finalProf}%` }}
                     />
                   </div>
@@ -494,17 +489,17 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                       type="button"
                       disabled={count <= 0}
                       onClick={() => handleRemovePoint(map.id)}
-                      className="w-8 h-8 rounded-lg bg-[#1E293B] hover:bg-[#2A374F] text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-cs-surface hover:bg-cs-hover active:scale-[0.98] border border-cs-border text-white flex items-center justify-center disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                       title="Diminuir ponto (-5%)"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
 
                     <div className="flex flex-col items-center">
-                      <span className={`font-display font-black text-base ${count > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                      <span className={`font-display font-black text-base ${count > 0 ? 'text-cs-accent' : 'text-cs-muted'}`}>
                         {count}
                       </span>
-                      <span className="text-[9px] font-mono text-slate-400 uppercase -mt-1">
+                      <span className="text-[10px] font-semibold text-cs-muted -mt-1">
                         pts
                       </span>
                     </div>
@@ -513,7 +508,7 @@ export const FinalResultsView: React.FC<FinalResultsViewProps> = ({
                       type="button"
                       disabled={remainingPoints <= 0 || isAtMax}
                       onClick={() => handleAddPoint(map.id)}
-                      className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500 border border-amber-500/40 text-amber-300 hover:text-black flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-cs-accent/20 hover:bg-cs-accent active:scale-[0.98] border border-cs-accent/40 text-cs-accent hover:text-black flex items-center justify-center disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                       title={isAtMax ? "Limite de 100% atingido" : "Aumentar ponto (+5%)"}
                     >
                       <Plus className="w-3.5 h-3.5" />

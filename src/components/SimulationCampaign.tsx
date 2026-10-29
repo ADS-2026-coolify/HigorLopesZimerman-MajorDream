@@ -1,8 +1,8 @@
+/* Hallmark · redesign: full · keep Swiss tournament engine, localStorage sync, confetti, sound · semantic tokens */
 import React, { useState, useEffect } from 'react';
 import { CampaignState } from '../types';
 import {
   SwissTournamentState,
-  TournamentTeam,
   TournamentMatch
 } from '../types/tournament';
 import {
@@ -16,7 +16,7 @@ import { MapVetoView } from './MapVetoView';
 import { MatchSimulationView } from './MatchSimulationView';
 import { sound } from '../utils/sound';
 import confetti from 'canvas-confetti';
-import { Trophy, Swords, Zap, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
+import { Swords, RotateCcw } from 'lucide-react';
 
 interface SimulationCampaignProps {
   campaign: CampaignState;
@@ -236,21 +236,21 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
   return (
     <div className="flex flex-col gap-5 max-w-6xl mx-auto pb-10">
       {/* Top Banner Status */}
-      <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-stone-500">
+      <div className="flex items-center justify-between text-xs font-semibold text-cs-muted">
         <div className="flex items-center gap-2">
-          <span>STAGE 1 · SWISS · 16 TIMES</span>
+          <span>Fase 1: formato suíço (16 times)</span>
           {tournament.isCompleted && (
             <span className={`px-2 py-0.5 rounded font-bold ${
-              tournament.userStatus === 'qualified' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+              tournament.userStatus === 'qualified' ? 'bg-cs-green/20 text-cs-green' : 'bg-cs-red/20 text-cs-red'
             }`}>
-              {tournament.userStatus === 'qualified' ? 'CLASSIFICADO (3 VITÓRIAS)' : 'ELIMINADO (3 DERROTAS)'}
+              {tournament.userStatus === 'qualified' ? 'Classificado (3 vitórias)' : 'Eliminado (3 derrotas)'}
             </span>
           )}
         </div>
-        <div className="text-emerald-500 font-bold">
-          {activeStage === 'veto' && 'SEU PICK/BAN'}
-          {activeStage === 'match' && 'PARTIDA EM ANDAMENTO'}
-          {activeStage === 'standings' && 'TABELA SWISS'}
+        <div className="text-cs-green font-bold">
+          {activeStage === 'veto' && 'Seu pick/ban'}
+          {activeStage === 'match' && 'Partida em andamento'}
+          {activeStage === 'standings' && 'Tabela suíça'}
         </div>
       </div>
 
@@ -276,70 +276,72 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
 
       {/* Standings View after a match */}
       {activeStage === 'standings' && (
-        <div className="flex flex-col items-center justify-center p-6 bg-[#f4efe6] dark:bg-[#18181b] border border-stone-300 dark:border-stone-800 rounded-2xl mb-2 text-center">
-          <div className="text-xl font-display font-black text-stone-900 dark:text-stone-100 mb-1">
+        <div className="flex flex-col items-center justify-center p-6 bg-cs-surface border border-cs-border rounded-2xl mb-2 text-center">
+          <div className="text-xl font-display font-black text-white mb-1">
             Rodada {tournament.currentRound - (tournament.isCompleted ? 0 : 1)} Finalizada
           </div>
-          <p className="text-xs font-mono text-stone-500 mb-5">
-            Seu time está com retrospecto <span className="font-bold text-stone-800 dark:text-stone-200">{userTeam.wins}-{userTeam.losses}</span> no torneio Swiss.
+          <p className="text-xs text-cs-muted mb-5">
+            Seu time está com retrospecto <span className="font-bold text-white">{userTeam.wins}-{userTeam.losses}</span> no torneio suíço.
           </p>
 
           {!tournament.isCompleted ? (
             <div className="flex flex-col items-center gap-3">
               {userTeam.status === 'qualified' && (
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="text-sm font-mono font-bold text-emerald-500">
-                    Seu time já está CLASSIFICADO (3 vitórias)!
+                  <div className="text-sm font-bold text-cs-green">
+                    Seu time já está classificado (3 vitórias)!
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-mono text-stone-500 animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Simulando rodadas restantes dos outros times automaticamente...
+                  <div className="flex items-center gap-2 text-xs text-cs-muted motion-safe:animate-pulse motion-reduce:animate-none">
+                    <span className="w-2 h-2 rounded-full bg-cs-green"></span>
+                    Simulando rodadas restantes dos outros times automaticamente…
                   </div>
                 </div>
               )}
               {userTeam.status === 'eliminated' && (
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="text-sm font-mono font-bold text-rose-500">
-                    Seu time foi ELIMINADO (3 derrotas).
+                  <div className="text-sm font-bold text-cs-red">
+                    Seu time foi eliminado (3 derrotas).
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-mono text-stone-500 animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                    Simulando rodadas restantes automaticamente...
+                  <div className="flex items-center gap-2 text-xs text-cs-muted motion-safe:animate-pulse motion-reduce:animate-none">
+                    <span className="w-2 h-2 rounded-full bg-cs-red"></span>
+                    Simulando rodadas restantes automaticamente…
                   </div>
                 </div>
               )}
               {userTeam.status === 'active' && (
                 <button
+                  type="button"
                   onClick={handleStartNextRound}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-cs-green hover:bg-emerald-400 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-bold text-xs whitespace-nowrap transition-colors shadow-sm flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-cs-green focus-visible:outline-none"
                 >
                   <Swords className="w-4 h-4" />
-                  Avançar para Próxima Rodada (Pick/Ban)
+                  Próxima rodada
                 </button>
               )}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
-              <span className={`text-sm font-mono font-bold ${
-                tournament.userStatus === 'qualified' ? 'text-emerald-500' : 'text-rose-500'
+              <span className={`text-sm font-bold ${
+                tournament.userStatus === 'qualified' ? 'text-cs-green' : 'text-cs-red'
               }`}>
                 {tournament.userStatus === 'qualified'
                   ? 'Parabéns! Seu time conquistou 3 vitórias e garantiu a vaga!'
                   : 'Fim de campanha: seu time sofreu 3 derrotas e foi eliminado.'}
               </span>
               <button
+                type="button"
                 onClick={onRestart}
-                className="px-6 py-2.5 rounded-xl bg-stone-900 text-stone-100 dark:bg-stone-100 dark:text-stone-900 font-mono font-bold text-xs uppercase tracking-wider transition shadow flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-cs-accent hover:bg-cs-accentHover active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-bold text-xs whitespace-nowrap transition-colors shadow-sm flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
               >
                 <RotateCcw className="w-4 h-4" />
-                Novo Draft & Torneio
+                Novo draft e torneio
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Swiss Standings Bracket (always visible below, matching reference screenshot) */}
+      {/* Swiss Standings Bracket (always visible below) */}
       <SwissStandings teams={tournament.teams} highlightTeamId="user-team" />
     </div>
   );

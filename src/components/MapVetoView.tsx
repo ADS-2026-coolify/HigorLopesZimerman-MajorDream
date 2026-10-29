@@ -1,6 +1,7 @@
+/* Hallmark · redesign: full · keep BO1/BO3 veto engine, CPU decision, red/green pick-ban cues · semantic tokens */
 import React, { useState, useEffect } from 'react';
 import { TournamentTeam, TournamentMatch, MapVetoState } from '../types/tournament';
-import { TOURNAMENT_MAPS, computeCpuVetoChoice, transitionVetoState, getExpectedVetoStep } from '../utils/tournamentEngine';
+import { TOURNAMENT_MAPS, computeCpuVetoChoice, transitionVetoState } from '../utils/tournamentEngine';
 import { TeamLogo } from './TeamLogo';
 import { sound } from '../utils/sound';
 
@@ -95,27 +96,27 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
 
   // Top status text
   const getStatusText = () => {
-    if (vetoState.currentTurn === 'completed') return 'MAPA DEFINIDO!';
+    if (vetoState.currentTurn === 'completed') return 'Mapa definido!';
     if (botThinking || vetoState.currentTurn === 'cpu_ban' || vetoState.currentTurn === 'cpu_pick') {
-      return vetoState.currentTurn === 'cpu_ban' ? 'O BOT ESTÁ BANINDO...' : 'O BOT ESTÁ ESCOLHENDO...';
+      return vetoState.currentTurn === 'cpu_ban' ? 'O bot está banindo...' : 'O bot está escolhendo...';
     }
-    if (vetoState.currentTurn === 'user_ban') return 'BANA UM MAPA';
-    if (vetoState.currentTurn === 'user_pick') return 'ESCOLHA SEU MAPA';
+    if (vetoState.currentTurn === 'user_ban') return 'Bana um mapa';
+    if (vetoState.currentTurn === 'user_pick') return 'Escolha seu mapa';
     return '';
   };
 
   const isUserTurn = vetoState.currentTurn === 'user_ban' || vetoState.currentTurn === 'user_pick';
-  const actionButtonLabel = vetoState.currentTurn === 'user_pick' ? 'ESCOLHER' : 'BANIR';
+  const actionButtonLabel = vetoState.currentTurn === 'user_pick' ? 'Escolher' : 'Banir';
   // Current phase drives red (ban) vs green (pick) cues everywhere
   const isBanPhase = vetoState.currentTurn === 'user_ban' || vetoState.currentTurn === 'cpu_ban';
   const isPickPhase = vetoState.currentTurn === 'user_pick' || vetoState.currentTurn === 'cpu_pick';
 
   return (
-    <div className="w-full bg-[#f4efe6] dark:bg-[#18181b] border border-stone-300/80 dark:border-stone-800 rounded-2xl p-5 text-stone-900 dark:text-stone-100 shadow-sm transition-all mb-4">
+    <div className="w-full bg-cs-surface border border-cs-border rounded-2xl p-5 text-white shadow-sm mb-4">
       {/* Top Bar Header */}
-      <div className="flex items-center justify-between text-xs font-mono tracking-wider uppercase text-stone-500 mb-4">
+      <div className="flex items-center justify-between text-xs font-semibold text-cs-muted mb-4">
         <div>
-          PICK / BAN · <span className="font-bold text-stone-800 dark:text-stone-200">{format}</span> · ROUND {match.roundNumber}
+          Pick / Ban · <span className="font-bold text-white">{format}</span> · Rodada {match.roundNumber}
         </div>
         <div className={`font-bold px-2.5 py-1 rounded-md border ${
           isBanPhase
@@ -129,7 +130,7 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
       </div>
 
       {/* Matchup Header: User vs Opponent */}
-      <div className="flex items-center justify-center gap-4 py-2 border-b border-stone-300/60 dark:border-stone-800/80 mb-5">
+      <div className="flex items-center justify-center gap-4 py-2 border-b border-cs-border mb-5">
         <div className="flex items-center gap-2">
           <TeamLogo
             teamId={userTeam.id}
@@ -139,15 +140,15 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
             size="sm"
             className="w-8 h-8 rounded-full"
           />
-          <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+          <span className="font-bold text-sm text-cs-green">
             {userTeam.name}
           </span>
         </div>
 
-        <span className="text-xs font-mono text-stone-400">VS</span>
+        <span className="text-xs font-semibold text-cs-muted">vs</span>
 
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-stone-800 dark:text-stone-200">
+          <span className="font-bold text-sm text-cs-text">
             {opponentTeam.name}
           </span>
           <TeamLogo
@@ -177,16 +178,16 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
           return (
             <div
               key={mapMeta.id}
-              className={`relative flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+              className={`relative flex items-center justify-between p-2.5 rounded-xl border transition-colors ${
                 isBanned
                   ? 'opacity-50 grayscale bg-cs-red/5 border-cs-red/30'
                   : isPicked
                   ? 'ring-2 ring-cs-green bg-cs-green/10 border-cs-green/40'
                   : isUserTurn && !botThinking && isBanPhase
-                  ? 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800 hover:border-cs-red hover:bg-cs-red/5'
+                  ? 'bg-cs-card border-cs-border hover:border-cs-red hover:bg-cs-red/5'
                   : isUserTurn && !botThinking && isPickPhase
-                  ? 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800 hover:border-cs-green hover:bg-cs-green/5'
-                  : 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800'
+                  ? 'bg-cs-card border-cs-border hover:border-cs-green hover:bg-cs-green/5'
+                  : 'bg-cs-card border-cs-border'
               }`}
             >
               {/* Map Info & Image */}
@@ -197,13 +198,13 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
                   className="w-12 h-10 object-cover rounded-lg shadow-sm shrink-0"
                 />
                 <div>
-                  <span className={`text-sm font-bold ${isBanned ? 'line-through text-stone-400' : ''}`}>
+                  <span className={`text-sm font-bold ${isBanned ? 'line-through text-cs-muted' : 'text-white'}`}>
                     {mapMeta.name}
                   </span>
                   {actionStep && (
-                    <div className="text-[10px] font-mono text-stone-500">
+                    <div className="text-[11px] text-cs-muted">
                       {actionStep.type === 'ban' ? 'Banido por ' : 'Escolhido por '}
-                      <span className="font-semibold">
+                      <span className="font-semibold text-cs-text">
                         {actionStep.actor === 'user' ? 'Você' : 'Bot'}
                       </span>
                     </div>
@@ -215,12 +216,12 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
               <div className="flex items-center gap-3 shrink-0">
                 {/* User Bar (Green) */}
                 <div className="flex flex-col items-end w-20">
-                  <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-[10px] font-mono font-semibold text-cs-green">
                     {userProf}%
                   </span>
-                  <div className="w-full h-1.5 bg-stone-200 dark:bg-stone-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-cs-bg rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 transition-all duration-300"
+                      className="h-full bg-cs-green transition-colors"
                       style={{ width: `${userProf}%` }}
                     />
                   </div>
@@ -228,12 +229,12 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
 
                 {/* Opponent Bar (Red) */}
                 <div className="flex flex-col items-start w-20">
-                  <span className="text-[10px] font-mono font-semibold text-rose-500">
+                  <span className="text-[10px] font-mono font-semibold text-cs-red">
                     {oppProf}%
                   </span>
-                  <div className="w-full h-1.5 bg-stone-200 dark:bg-stone-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-cs-bg rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-rose-500 transition-all duration-300"
+                      className="h-full bg-cs-red transition-colors"
                       style={{ width: `${oppProf}%` }}
                     />
                   </div>
@@ -245,9 +246,9 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
                     type="button"
                     disabled={!isUserTurn || botThinking}
                     onClick={() => handleUserAction(mapMeta.id, mapMeta.name)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-colors shrink-0 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:ring-2 focus-visible:outline-none ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:ring-2 focus-visible:outline-none ${
                       !isUserTurn || botThinking
-                        ? 'bg-stone-300 dark:bg-stone-800 text-stone-500'
+                        ? 'bg-cs-surface text-cs-muted'
                         : isPickPhase
                         ? 'bg-cs-green text-black hover:bg-emerald-400 focus-visible:ring-cs-green'
                         : 'bg-cs-red text-white hover:bg-red-400 focus-visible:ring-cs-red'
@@ -258,14 +259,14 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
                 )}
 
                 {isBanned && (
-                  <span className="px-2.5 py-1 rounded bg-cs-red/20 text-cs-red border border-cs-red/40 text-[10px] font-mono font-bold uppercase">
-                    BANIDO
+                  <span className="px-2.5 py-1 rounded bg-cs-red/20 text-cs-red border border-cs-red/40 text-xs font-bold">
+                    Banido
                   </span>
                 )}
 
                 {isPicked && (
-                  <span className="px-2.5 py-1 rounded bg-cs-green text-black text-[10px] font-mono font-bold uppercase">
-                    SELECIONADO
+                  <span className="px-2.5 py-1 rounded bg-cs-green text-black text-xs font-bold">
+                    Selecionado
                   </span>
                 )}
               </div>
@@ -274,9 +275,9 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
         })}
       </div>
 
-      {/* Footer info: e.g. 8 MAPAS · 1 RESTANTE PRA JOGAR */}
-      <div className="text-center text-[11px] font-mono tracking-wider text-stone-500 pt-2 border-t border-stone-300/40 dark:border-stone-800/40">
-        {TOURNAMENT_MAPS.length} MAPAS · {availableMaps.length} RESTANTE{availableMaps.length !== 1 ? 'S' : ''} PRA JOGAR
+      {/* Footer info: e.g. 8 mapas · 1 restante pra jogar */}
+      <div className="text-center text-xs text-cs-muted pt-2 border-t border-cs-border">
+        {TOURNAMENT_MAPS.length} mapas · {availableMaps.length} restante{availableMaps.length !== 1 ? 's' : ''} para jogar
       </div>
     </div>
   );
