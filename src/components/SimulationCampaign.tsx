@@ -846,7 +846,7 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
               Média de Rating HLTV 2.0 no Torneio ({major.userTeamBase.name})
             </span>
             <span className="text-xs text-cs-muted">
-              {userPlayerStats[0]?.matchesPlayed || 0} jogos · {userPlayerStats[0]?.mapsPlayed || 0} mapas · {userPlayerStats[0]?.roundsPlayed || 0} rounds
+              {userPlayerStats[0]?.matchesPlayed || 0} jogos, {userPlayerStats[0]?.mapsPlayed || 0} mapas ({userPlayerStats[0]?.roundsPlayed || 0} rounds)
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
@@ -903,10 +903,10 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
           <div className="bg-cs-card border border-cs-border rounded-xl p-4 max-w-3xl mx-auto space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-cs-border pb-2 text-left">
               <span className="text-xs font-bold text-cs-accent">
-                Elenco Campeão · Rating HLTV 2.0 ({champ.name})
+                Elenco Campeão, Rating HLTV 2.0 ({champ.name})
               </span>
               <span className="text-xs text-cs-muted">
-                {champPlayerStats[0]?.matchesPlayed || 0} jogos · {champPlayerStats[0]?.mapsPlayed || 0} mapas · {champPlayerStats[0]?.roundsPlayed || 0} rounds
+                {champPlayerStats[0]?.matchesPlayed || 0} jogos, {champPlayerStats[0]?.mapsPlayed || 0} mapas ({champPlayerStats[0]?.roundsPlayed || 0} rounds)
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
