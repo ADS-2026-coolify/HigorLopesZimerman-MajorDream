@@ -106,6 +106,9 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
 
   const isUserTurn = vetoState.currentTurn === 'user_ban' || vetoState.currentTurn === 'user_pick';
   const actionButtonLabel = vetoState.currentTurn === 'user_pick' ? 'ESCOLHER' : 'BANIR';
+  // Current phase drives red (ban) vs green (pick) cues everywhere
+  const isBanPhase = vetoState.currentTurn === 'user_ban' || vetoState.currentTurn === 'cpu_ban';
+  const isPickPhase = vetoState.currentTurn === 'user_pick' || vetoState.currentTurn === 'cpu_pick';
 
   return (
     <div className="w-full bg-[#f4efe6] dark:bg-[#18181b] border border-stone-300/80 dark:border-stone-800 rounded-2xl p-5 text-stone-900 dark:text-stone-100 shadow-sm transition-all mb-4">
@@ -114,8 +117,14 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
         <div>
           PICK / BAN · <span className="font-bold text-stone-800 dark:text-stone-200">{format}</span> · ROUND {match.roundNumber}
         </div>
-        <div className="text-amber-600 dark:text-amber-400 font-bold animate-pulse">
-          {getStatusText()}
+        <div className={`font-bold px-2.5 py-1 rounded-md border ${
+          isBanPhase
+            ? 'text-cs-red bg-cs-red/10 border-cs-red/40'
+            : isPickPhase
+            ? 'text-cs-green bg-cs-green/10 border-cs-green/40'
+            : 'text-cs-accent border-transparent'
+        }`}>
+          {isBanPhase ? '✕ ' : isPickPhase ? '✓ ' : ''}{getStatusText()}
         </div>
       </div>
 
@@ -170,10 +179,14 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
               key={mapMeta.id}
               className={`relative flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                 isBanned
-                  ? 'opacity-40 grayscale bg-stone-200/40 dark:bg-stone-900/40 border-stone-300 dark:border-stone-800'
+                  ? 'opacity-50 grayscale bg-cs-red/5 border-cs-red/30'
                   : isPicked
-                  ? 'ring-2 ring-emerald-500 bg-emerald-500/10 border-emerald-500/40'
-                  : 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800 hover:border-stone-400'
+                  ? 'ring-2 ring-cs-green bg-cs-green/10 border-cs-green/40'
+                  : isUserTurn && !botThinking && isBanPhase
+                  ? 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800 hover:border-cs-red hover:bg-cs-red/5'
+                  : isUserTurn && !botThinking && isPickPhase
+                  ? 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800 hover:border-cs-green hover:bg-cs-green/5'
+                  : 'bg-white/80 dark:bg-stone-900/80 border-stone-300/80 dark:border-stone-800'
               }`}
             >
               {/* Map Info & Image */}
@@ -229,20 +242,29 @@ export const MapVetoView: React.FC<MapVetoViewProps> = ({
                 {/* Action Button */}
                 {isAvailable && (
                   <button
+                    type="button"
                     disabled={!isUserTurn || botThinking}
                     onClick={() => handleUserAction(mapMeta.id, mapMeta.name)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all shrink-0 ${
-                      isUserTurn && !botThinking
-                        ? 'bg-stone-900 text-stone-100 hover:bg-black dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white shadow'
-                        : 'bg-stone-300 dark:bg-stone-800 text-stone-500 cursor-not-allowed'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-colors shrink-0 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:ring-2 focus-visible:outline-none ${
+                      !isUserTurn || botThinking
+                        ? 'bg-stone-300 dark:bg-stone-800 text-stone-500'
+                        : isPickPhase
+                        ? 'bg-cs-green text-black hover:bg-emerald-400 focus-visible:ring-cs-green'
+                        : 'bg-cs-red text-white hover:bg-red-400 focus-visible:ring-cs-red'
                     }`}
                   >
-                    {actionButtonLabel}
+                    {isPickPhase ? '✓ ' : '✕ '}{actionButtonLabel}
                   </button>
                 )}
 
+                {isBanned && (
+                  <span className="px-2.5 py-1 rounded bg-cs-red/20 text-cs-red border border-cs-red/40 text-[10px] font-mono font-bold uppercase">
+                    BANIDO
+                  </span>
+                )}
+
                 {isPicked && (
-                  <span className="px-2.5 py-1 rounded bg-emerald-500 text-white text-[10px] font-mono font-bold uppercase">
+                  <span className="px-2.5 py-1 rounded bg-cs-green text-black text-[10px] font-mono font-bold uppercase">
                     SELECIONADO
                   </span>
                 )}
