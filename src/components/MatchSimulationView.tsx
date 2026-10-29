@@ -24,6 +24,20 @@ const roleBadgeConfig: Record<string, { label: string; bg: string; text: string 
   support: { label: 'SUP', bg: 'bg-indigo-700', text: 'text-white' },
 };
 
+type RoundSpeed = '1x' | '2x' | '3x' | 'instant';
+const SPEED_STORAGE_KEY = 'majordream.roundSpeed';
+const SPEED_OPTIONS: { id: RoundSpeed; label: string }[] = [
+  { id: '1x', label: '1x' },
+  { id: '2x', label: '2x' },
+  { id: '3x', label: '3x' },
+  { id: 'instant', label: 'Instantâneo' },
+];
+const ROUND_DELAY_MS: Record<Exclude<RoundSpeed, 'instant'>, number> = {
+  '1x': 400,
+  '2x': 200,
+  '3x': 133,
+};
+
 export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
   match,
   userTeam,
@@ -36,6 +50,16 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
   const [currentMapResult, setCurrentMapResult] = useState<MapGameResult | null>(null);
   const [liveRoundIndex, setLiveRoundIndex] = useState(0);
   const [isPlayingAuto, setIsPlayingAuto] = useState(true);
+  const [speed, setSpeed] = useState<RoundSpeed>(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(SPEED_STORAGE_KEY) : null;
+    return SPEED_OPTIONS.some(o => o.id === saved) ? (saved as RoundSpeed) : '1x';
+  });
+
+  const changeSpeed = (next: RoundSpeed) => {
+    setSpeed(next);
+    window.localStorage.setItem(SPEED_STORAGE_KEY, next);
+    sound.playClick();
+  };
 
   const activeMapId = mapsToPlay[currentMapIndex] || mapsToPlay[0];
   const activeMapMeta = TOURNAMENT_MAPS.find(m => m.id === activeMapId) || TOURNAMENT_MAPS[0];
@@ -60,10 +84,14 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
     if (!isPlayingAuto || !currentMapResult) return;
 
     if (liveRoundIndex < currentMapResult.rounds.length) {
+      if (speed === 'instant') {
+        setLiveRoundIndex(currentMapResult.rounds.length);
+        return;
+      }
       const timer = setTimeout(() => {
         setLiveRoundIndex(prev => prev + 1);
         sound.playClick();
-      }, 400);
+      }, ROUND_DELAY_MS[speed]);
       return () => clearTimeout(timer);
     } else {
       setIsPlayingAuto(false);
@@ -73,7 +101,7 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
         sound.playRoundLoss();
       }
     }
-  }, [isPlayingAuto, liveRoundIndex, currentMapResult]);
+  }, [isPlayingAuto, liveRoundIndex, currentMapResult, speed]);
 
   // Score calculations
   const displayedRounds = currentMapResult?.rounds.slice(0, liveRoundIndex) || [];
@@ -132,6 +160,27 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
   };
 
   return (
+    <div className="w-full">
+      {/* Round speed control (outside the match card, persisted across matches) */}
+      <div className="flex items-center justify-end gap-2 mb-2">
+        <span className="text-xs font-semibold text-cs-muted">Velocidade</span>
+        <div role="radiogroup" aria-label="Velocidade dos rounds" className="flex items-center gap-1 p-1 rounded-lg bg-cs-surface border border-cs-border">
+          {SPEED_OPTIONS.map(opt => (
+            <button
+              key={opt.id}
+              type="button"
+              role="radio"
+              aria-checked={speed === opt.id}
+              onClick={() => changeSpeed(opt.id)}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold tabular-nums transition-colors active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none ${
+                speed === opt.id ? 'bg-cs-accent text-black' : 'text-cs-muted hover:text-white hover:bg-cs-card'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
     <div className="w-full relative rounded-2xl overflow-hidden border border-cs-border shadow-md mb-4 bg-cs-surface text-white">
       {/* Background Map Image with Dim Overlay */}
       <div
@@ -366,6 +415,7 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
