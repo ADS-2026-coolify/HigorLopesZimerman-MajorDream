@@ -44,7 +44,7 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
       // Slight delay so DOM layout has settled for container width
       const timer = setTimeout(() => {
         triggerSpin();
-      }, 350);
+      }, 150);
       return () => clearTimeout(timer);
     }
   }, [reelItems]);
@@ -85,15 +85,15 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
 
     setScrollOffset(finalOffset);
 
-    // Complete spin in 3.2s quietly
+    // Complete spin in 1.6s
     setTimeout(() => {
       setSelectedTeam(winningTeam);
       setIsDrawing(false);
       setIsAnimationFinished(true);
       setTimeout(() => {
         onTeamSelected(winningTeam);
-      }, 900);
-    }, 3200);
+      }, 400);
+    }, 1600);
   };
 
   return (
@@ -123,7 +123,7 @@ export const TeamRoulette: React.FC<TeamRouletteProps> = ({
             style={{
               transform: `translateX(-${scrollOffset}px)`,
               transition: isDrawing
-                ? 'transform 3.2s cubic-bezier(0.12, 0.8, 0.22, 1)'
+                ? 'transform 1.6s cubic-bezier(0.1, 0.85, 0.2, 1)'
                 : 'none'
             }}
           >
