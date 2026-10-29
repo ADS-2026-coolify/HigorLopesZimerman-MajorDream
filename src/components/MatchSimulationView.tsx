@@ -157,8 +157,16 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
         </div>
 
         {/* Scoreboard Center */}
-        <div className="flex flex-col items-center my-6">
-          <div className="grid grid-cols-[140px_180px_140px] sm:grid-cols-[160px_220px_160px] items-center justify-items-center">
+        <div className="relative flex flex-col items-center my-6 py-5 rounded-xl overflow-hidden border border-cs-border/60">
+          {/* Map photo backdrop behind the scoreboard */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover bg-center opacity-35 pointer-events-none"
+            style={{ backgroundImage: `url(${activeMapMeta.thumbnail})` }}
+          />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-cs-surface via-cs-surface/60 to-cs-surface pointer-events-none" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-cs-surface/90 via-transparent to-cs-surface/70 pointer-events-none" />
+          <div className="relative grid grid-cols-[140px_180px_140px] sm:grid-cols-[160px_220px_160px] items-center justify-items-center">
             {/* User Team */}
             <div className="flex flex-col items-center gap-2 text-center w-full">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-green p-1 flex items-center justify-center bg-cs-bg shadow-sm shrink-0">
@@ -210,7 +218,7 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
           </div>
 
           {/* Round outcome timeline dots - outside the team grid so it never affects their position */}
-          <div className="flex items-center gap-1.5 mt-3 max-w-[340px] flex-wrap justify-center min-h-[24px]">
+          <div className="relative flex items-center gap-1.5 mt-3 max-w-[340px] flex-wrap justify-center min-h-[24px]">
             {displayedRounds.map((rnd, i) => (
               <div
                 key={i}
