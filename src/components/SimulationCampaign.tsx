@@ -520,6 +520,10 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
         ? 'Continuar para Stage 3'
         : 'Ir para os playoffs';
 
+    const isUserEliminated =
+      major.eliminatedTeamIds.includes('user-team') ||
+      eliminated.some(t => t.id === 'user-team');
+
     return (
       <div className="bg-cs-surface border border-cs-border rounded-2xl p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cs-border pb-4">
@@ -535,14 +539,27 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleConfirmNextStage}
-            className="px-6 py-3 rounded-xl bg-cs-accent hover:bg-cs-accentHover active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-display font-black text-sm whitespace-nowrap transition-colors shadow-md flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
-          >
-            <span>{nextActionLabel}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {isUserEliminated && (
+              <button
+                type="button"
+                onClick={onRestart}
+                className="px-5 py-3 rounded-xl bg-cs-card hover:bg-cs-hover active:scale-[0.98] border border-cs-border text-white font-display font-bold text-sm whitespace-nowrap transition-colors shadow-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Recomeçar draft</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleConfirmNextStage}
+              className="px-6 py-3 rounded-xl bg-cs-accent hover:bg-cs-accentHover active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-display font-black text-sm whitespace-nowrap transition-colors shadow-md flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
+            >
+              <span>{nextActionLabel}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
