@@ -526,7 +526,7 @@ describe('Tournament Engine Tests', () => {
 
     it('never repeats the same matchup within the same Swiss stage, and resets matchup history on next stage', () => {
       for (let s = 1; s <= 15; s++) {
-        let major = initializeMajorTournament('no-rematch-test', 'Dream V', mockRoster, 90, {}, s * 97);
+        let major = initializeMajorTournament('no-rematch-test', 'Dream V', dummyLineup, 90, {}, s * 97);
 
         // Stage 1
         const s1 = simulateSwissStageToCompletion(major.stages.stage1);
