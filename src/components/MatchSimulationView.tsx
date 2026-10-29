@@ -1,10 +1,11 @@
+/* Hallmark · redesign: full · keep MR12 simulation engine, deterministic seed, sound · semantic tokens */
 import React, { useState, useEffect } from 'react';
 import { TournamentTeam, TournamentMatch, MapGameResult } from '../types/tournament';
 import { TOURNAMENT_MAPS, simulateCompetitiveMap } from '../utils/tournamentEngine';
 import { TeamLogo } from './TeamLogo';
 import { CountryFlag } from './CountryFlag';
 import { sound } from '../utils/sound';
-import { Play, FastForward, CheckCircle2 } from 'lucide-react';
+import { FastForward, CheckCircle2 } from 'lucide-react';
 
 interface MatchSimulationViewProps {
   match: TournamentMatch;
@@ -15,12 +16,12 @@ interface MatchSimulationViewProps {
 }
 
 const roleBadgeConfig: Record<string, { label: string; bg: string; text: string }> = {
-  igl: { label: 'IGL', bg: 'bg-[#1D4ED8]', text: 'text-white' },
-  awp: { label: 'AWP', bg: 'bg-[#7C3AED]', text: 'text-white' },
-  entry: { label: 'ENTRY', bg: 'bg-[#DC2626]', text: 'text-white' },
-  rifler: { label: 'RIFLER', bg: 'bg-[#D97706]', text: 'text-white' },
-  lurker: { label: 'LURKER', bg: 'bg-[#0D9488]', text: 'text-white' },
-  support: { label: 'SUPPORT', bg: 'bg-[#4F46E5]', text: 'text-white' },
+  igl: { label: 'IGL', bg: 'bg-blue-700', text: 'text-white' },
+  awp: { label: 'AWP', bg: 'bg-violet-700', text: 'text-white' },
+  entry: { label: 'ENT', bg: 'bg-red-700', text: 'text-white' },
+  rifler: { label: 'RIF', bg: 'bg-amber-700', text: 'text-white' },
+  lurker: { label: 'LURK', bg: 'bg-teal-700', text: 'text-white' },
+  support: { label: 'SUP', bg: 'bg-indigo-700', text: 'text-white' },
 };
 
 export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
@@ -80,7 +81,6 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
 
   const userLiveScore = currentRoundEvent ? currentRoundEvent.userScore : 0;
   const oppLiveScore = currentRoundEvent ? currentRoundEvent.opponentScore : 0;
-  const currentRoundNumber = liveRoundIndex + 1;
 
   // BO3 series map score
   const userMapsWon = completedMaps.filter(m => m.winner === 'user').length +
@@ -132,35 +132,35 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
   };
 
   return (
-    <div className="w-full relative rounded-2xl overflow-hidden border border-stone-300 dark:border-stone-800 shadow-xl mb-4 bg-stone-900 text-white">
+    <div className="w-full relative rounded-2xl overflow-hidden border border-cs-border shadow-md mb-4 bg-cs-surface text-white">
       {/* Background Map Image with Dim Overlay */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-25 filter blur-xs"
+        className="absolute inset-0 bg-cover bg-center opacity-20 filter blur-xs"
         style={{ backgroundImage: `url(${activeMapMeta.thumbnail})` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/85 to-stone-900/90" />
+      <div className="absolute inset-0 bg-gradient-to-t from-cs-bg via-cs-surface/90 to-cs-surface/95" />
 
       {/* Content Container */}
       <div className="relative z-10 p-5 sm:p-6 flex flex-col justify-between min-h-[460px]">
         {/* Top Header: Round info & Map name */}
-        <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-stone-400 border-b border-white/10 pb-3">
+        <div className="flex items-center justify-between text-xs text-cs-muted border-b border-cs-border pb-3">
           <div>
-            ROUND {match.roundNumber} · <span className="text-emerald-400 font-bold">AO VIVO</span>
+            Round {match.roundNumber}, <span className="text-cs-green font-semibold">Ao vivo</span>
           </div>
           <div className="flex items-center gap-2">
             <img src={activeMapMeta.thumbnail} alt="" className="w-5 h-4 object-cover rounded" />
-            <span>MAPA · {activeMapMeta.name}</span>
+            <span>Mapa: {activeMapMeta.name}</span>
           </div>
           <div>
-            {match.format === 'BO3' ? `SÉRIE BO3 (${userMapsWon} - ${oppMapsWon})` : 'FORMATO BO1'}
+            {match.format === 'BO3' ? `Série BO3 (${userMapsWon} - ${oppMapsWon})` : 'Formato BO1'}
           </div>
         </div>
 
         {/* Scoreboard Center */}
         <div className="flex items-center justify-center gap-8 sm:gap-14 my-6">
           {/* User Team */}
-          <div className="flex flex-col items-center gap-2 text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-emerald-500/80 p-1 flex items-center justify-center bg-stone-950 shadow-lg shadow-emerald-500/20">
+          <div className="flex flex-col items-center gap-2 text-center shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-green p-1 flex items-center justify-center bg-cs-bg shadow-sm">
               <TeamLogo
                 teamId={userTeam.id}
                 name={userTeam.name}
@@ -170,43 +170,43 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 className="w-full h-full rounded-full"
               />
             </div>
-            <span className="font-bold text-base sm:text-lg text-emerald-400 max-w-[140px] truncate">
+            <span className="font-bold text-base sm:text-lg text-cs-green max-w-[140px] truncate">
               {userTeam.name}
             </span>
           </div>
 
           {/* Central Match Score */}
-          <div className="flex flex-col items-center">
-            <div className="text-5xl sm:text-6xl font-display font-black tracking-wider text-white">
-              {userLiveScore} <span className="text-stone-500 font-normal">−</span> {oppLiveScore}
+          <div className="flex flex-col items-center min-w-0 flex-1">
+            <div className="text-5xl sm:text-6xl font-display font-black text-white">
+              {userLiveScore} <span className="text-cs-muted font-normal">−</span> {oppLiveScore}
             </div>
             {/* Subtitle with Regulation or Overtime Target and side switch */}
-            <span className="text-[11px] font-mono tracking-widest text-stone-400 mt-1 uppercase">
+            <span className="text-xs font-semibold text-cs-muted mt-1">
               {currentRoundEvent && currentRoundEvent.phase === 'overtime'
-                ? `OVERTIME ${currentRoundEvent.overtimeBlock} · PRIMEIRO A ${16 + 3 * ((currentRoundEvent.overtimeBlock || 1) - 1)}`
-                : 'MR12 · PRIMEIRO A 13'}
+                ? `Overtime ${currentRoundEvent.overtimeBlock}, primeiro a ${16 + 3 * ((currentRoundEvent.overtimeBlock || 1) - 1)}`
+                : 'MR12, primeiro a 13'}
             </span>
 
             {/* Round outcome timeline dots */}
-            <div className="flex items-center gap-1.5 mt-3 max-w-[260px] flex-wrap justify-center">
+            <div className="flex items-center gap-1.5 mt-3 w-full max-w-[260px] flex-wrap justify-center">
               {displayedRounds.map((rnd, i) => (
                 <div
                   key={i}
                   title={`Round ${rnd.roundNumber}: ${rnd.winner === 'user' ? userTeam.name : opponentTeam.name}`}
                   className={`w-2.5 h-2.5 rounded-full ${
-                    rnd.winner === 'user' ? 'bg-emerald-500' : 'bg-rose-500'
+                    rnd.winner === 'user' ? 'bg-cs-green' : 'bg-cs-red'
                   }`}
                 />
               ))}
               {!isMapFinished && (
-                <div className="w-2.5 h-2.5 rounded-full border border-stone-400 animate-ping" />
+                <div className="w-2.5 h-2.5 rounded-full border border-cs-accent motion-safe:animate-ping motion-reduce:animate-none" />
               )}
             </div>
           </div>
 
           {/* Opponent Team */}
-          <div className="flex flex-col items-center gap-2 text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-600/80 p-1 flex items-center justify-center bg-stone-950 shadow-lg">
+          <div className="flex flex-col items-center gap-2 text-center shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-border p-1 flex items-center justify-center bg-cs-bg shadow-sm">
               <TeamLogo
                 teamId={opponentTeam.id}
                 name={opponentTeam.name}
@@ -216,45 +216,45 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 className="w-full h-full rounded-full"
               />
             </div>
-            <span className="font-bold text-base sm:text-lg text-stone-200 max-w-[140px] truncate">
+            <span className="font-bold text-base sm:text-lg text-cs-text max-w-[140px] truncate">
               {opponentTeam.name}
             </span>
           </div>
         </div>
 
-        {/* Both 5-Player Lineups side-by-side matching screenshot */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/40 border border-white/5 rounded-xl p-4 my-2">
+        {/* Both 5-Player Lineups side-by-side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-cs-card border border-cs-border rounded-xl p-4 my-2">
           {/* User Lineup (Left) */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono tracking-wider uppercase text-emerald-400 font-bold">
+              <span className="text-xs font-semibold text-cs-green">
                 {userTeam.name} (OVR {userTeam.ovr})
               </span>
               {currentRoundEvent && (
-                <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 rounded ${
-                  currentRoundEvent.userSide === 'CT' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  currentRoundEvent.userSide === 'CT' ? 'bg-cs-blue/20 text-cs-blue border border-cs-blue/40' : 'bg-cs-accent/20 text-cs-accent border border-cs-accent/40'
                 }`}>
-                  LADO: {currentRoundEvent.userSide}
+                  Lado: {currentRoundEvent.userSide}
                 </span>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
               {userTeam.roster.slice(0, 5).map(player => {
-                const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-stone-700', text: 'text-white' };
+                const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-cs-surface', text: 'text-white' };
                 return (
-                  <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-white/5">
+                  <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-cs-surface border border-cs-border/60">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-3.5 rounded-xs overflow-hidden shrink-0 shadow-xs border border-white/10 flex items-center justify-center">
+                      <div className="w-5 h-3.5 rounded overflow-hidden shrink-0 border border-cs-border flex items-center justify-center">
                         <CountryFlag countryCode={player.country} />
                       </div>
-                      <span className="font-mono text-[10px] text-stone-400 font-semibold">{player.country}</span>
-                      <span className="font-bold text-stone-200">{player.nickname}</span>
+                      <span className="text-xs text-cs-muted font-semibold">{player.country}</span>
+                      <span className="font-bold text-white">{player.nickname}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider ${badge.bg} ${badge.text}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badge.bg} ${badge.text}`}>
                         {badge.label}
                       </span>
-                      <span className="font-mono font-bold text-stone-300">{player.ovr}</span>
+                      <span className="font-mono font-bold text-cs-text">{player.ovr}</span>
                     </div>
                   </div>
                 );
@@ -265,14 +265,14 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
           {/* Opponent Lineup (Right) */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono tracking-wider uppercase text-rose-400 font-bold">
+              <span className="text-xs font-semibold text-cs-red">
                 {opponentTeam.name} (OVR {opponentTeam.ovr})
               </span>
               {currentRoundEvent && (
-                <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 rounded ${
-                  currentRoundEvent.opponentSide === 'CT' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  currentRoundEvent.opponentSide === 'CT' ? 'bg-cs-blue/20 text-cs-blue border border-cs-blue/40' : 'bg-cs-accent/20 text-cs-accent border border-cs-accent/40'
                 }`}>
-                  LADO: {currentRoundEvent.opponentSide}
+                  Lado: {currentRoundEvent.opponentSide}
                 </span>
               )}
             </div>
@@ -284,21 +284,21 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 { id: 'bot-4', nickname: 'Rifle Bot', country: 'US', role: 'rifler', ovr: opponentTeam.ovr },
                 { id: 'bot-5', nickname: 'Lurk Bot', country: 'UA', role: 'lurker', ovr: opponentTeam.ovr },
               ]).slice(0, 5).map(player => {
-                const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-stone-700', text: 'text-white' };
+                const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-cs-surface', text: 'text-white' };
                 return (
-                  <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-white/5">
+                  <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-cs-surface border border-cs-border/60">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-3.5 rounded-xs overflow-hidden shrink-0 shadow-xs border border-white/10 flex items-center justify-center">
+                      <div className="w-5 h-3.5 rounded overflow-hidden shrink-0 border border-cs-border flex items-center justify-center">
                         <CountryFlag countryCode={player.country} />
                       </div>
-                      <span className="font-mono text-[10px] text-stone-400 font-semibold">{player.country}</span>
-                      <span className="font-bold text-stone-200">{player.nickname}</span>
+                      <span className="text-xs text-cs-muted font-semibold">{player.country}</span>
+                      <span className="font-bold text-white">{player.nickname}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider ${badge.bg} ${badge.text}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badge.bg} ${badge.text}`}>
                         {badge.label}
                       </span>
-                      <span className="font-mono font-bold text-stone-300">{player.ovr}</span>
+                      <span className="font-mono font-bold text-cs-text">{player.ovr}</span>
                     </div>
                   </div>
                 );
@@ -308,10 +308,10 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
         </div>
 
         {/* Bottom Action Controls */}
-        <div className="flex items-center justify-between pt-4 border-t border-white/10 mt-2">
+        <div className="flex items-center justify-between pt-4 border-t border-cs-border mt-2">
           {/* Latest round highlight description */}
-          <div className="text-xs font-mono text-stone-300 italic max-w-md truncate">
-            {currentRoundEvent ? currentRoundEvent.highlightText : 'Aquecendo para o confronto...'}
+          <div className="text-xs text-cs-muted italic max-w-md truncate">
+            {currentRoundEvent ? currentRoundEvent.highlightText : 'Aquecendo para o confronto…'}
           </div>
 
           {/* Action buttons */}
@@ -319,32 +319,36 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
             {!isMapFinished ? (
               <>
                 <button
+                  type="button"
                   onClick={() => setIsPlayingAuto(prev => !prev)}
-                  className="px-3 py-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-mono font-semibold transition"
+                  className="px-3 py-1.5 rounded-lg border border-cs-border bg-cs-surface hover:bg-cs-card active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-xs font-semibold text-cs-text transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                 >
                   {isPlayingAuto ? 'Pausar' : 'Continuar'}
                 </button>
                 <button
+                  type="button"
                   onClick={handleNextRound}
-                  className="px-3 py-1.5 rounded-lg bg-stone-700 hover:bg-stone-600 text-xs font-mono font-semibold transition"
+                  className="px-3 py-1.5 rounded-lg bg-cs-surface hover:bg-cs-card active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none border border-cs-border text-xs font-semibold text-cs-text transition-colors focus-visible:ring-2 focus-visible:ring-cs-accent focus-visible:outline-none"
                 >
                   Próximo round
                 </button>
                 <button
+                  type="button"
                   onClick={handleFastForward}
-                  className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-mono font-bold transition flex items-center gap-1.5 shadow"
+                  className="px-3.5 py-1.5 rounded-lg bg-cs-green hover:bg-emerald-400 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm focus-visible:ring-2 focus-visible:ring-cs-green focus-visible:outline-none"
                 >
                   <FastForward className="w-3.5 h-3.5" />
-                  Simular Rápido
+                  Simular rápido
                 </button>
               </>
             ) : (
               <button
+                type="button"
                 onClick={handleProceed}
-                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                className="px-5 py-2 rounded-xl bg-cs-green hover:bg-emerald-400 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-black font-bold text-xs transition-colors shadow-sm flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-cs-green focus-visible:outline-none"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                {isSeriesDecided ? 'Concluir Partida' : 'Próximo Mapa da Série'}
+                {isSeriesDecided ? 'Concluir partida' : 'Próximo mapa da série'}
               </button>
             )}
           </div>
