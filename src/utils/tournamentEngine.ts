@@ -608,6 +608,29 @@ export function simulateCompetitiveMap(
   let roundNum = 0;
   const rounds: RoundEvent[] = [];
 
+  const getFallbackRoster = (team: TournamentTeam) => {
+    if (team.roster && team.roster.length > 0) return team.roster.slice(0, 5);
+    return [
+      { id: 'bot-1', nickname: 'Entry Bot', country: 'SE', role: 'entry' as const, ovr: team.ovr, teamId: team.id, teamName: team.name, era: '2024', tier: 'contender' as const },
+      { id: 'bot-2', nickname: 'AWP Bot', country: 'FR', role: 'awp' as const, ovr: team.ovr, teamId: team.id, teamName: team.name, era: '2024', tier: 'contender' as const },
+      { id: 'bot-3', nickname: 'IGL Bot', country: 'DK', role: 'igl' as const, ovr: team.ovr, teamId: team.id, teamName: team.name, era: '2024', tier: 'contender' as const },
+      { id: 'bot-4', nickname: 'Rifle Bot', country: 'US', role: 'rifler' as const, ovr: team.ovr, teamId: team.id, teamName: team.name, era: '2024', tier: 'contender' as const },
+      { id: 'bot-5', nickname: 'Lurk Bot', country: 'UA', role: 'lurker' as const, ovr: team.ovr, teamId: team.id, teamName: team.name, era: '2024', tier: 'contender' as const },
+    ];
+  };
+
+  const t1Roster = getFallbackRoster(team1);
+  const t2Roster = getFallbackRoster(team2);
+  const cumulativeRatingSums: Record<string, number> = {};
+
+  const computePlayerRoundRating = (ovr: number, wonRound: boolean, r: number): number => {
+    const skillOffset = (ovr - 85) * 0.015;
+    const base = wonRound ? 1.24 + skillOffset : 0.78 + skillOffset;
+    const swing = (r - 0.5) * 1.15;
+    const raw = Math.min(2.45, Math.max(0.25, base + swing));
+    return Math.round(raw * 100) / 100;
+  };
+
   const roundHighlights = [
     'Eliminação rápida pelo bomb A',
     'Retake espetacular no 2v3',
@@ -644,6 +667,23 @@ export function simulateCompetitiveMap(
     const userSide = team1.isUser ? sideInfo.t1Side : sideInfo.t2Side;
     const opponentSide = team1.isUser ? sideInfo.t2Side : sideInfo.t1Side;
 
+    const playerRoundRatings: Record<string, number> = {};
+    const playerAverageRatings: Record<string, number> = {};
+
+    for (const p of t1Roster) {
+      const rRating = computePlayerRoundRating(p.ovr, t1WinsRound, rng());
+      playerRoundRatings[p.id] = rRating;
+      cumulativeRatingSums[p.id] = (cumulativeRatingSums[p.id] || 0) + rRating;
+      playerAverageRatings[p.id] = Math.round((cumulativeRatingSums[p.id] / roundNum) * 100) / 100;
+    }
+
+    for (const p of t2Roster) {
+      const rRating = computePlayerRoundRating(p.ovr, !t1WinsRound, rng());
+      playerRoundRatings[p.id] = rRating;
+      cumulativeRatingSums[p.id] = (cumulativeRatingSums[p.id] || 0) + rRating;
+      playerAverageRatings[p.id] = Math.round((cumulativeRatingSums[p.id] / roundNum) * 100) / 100;
+    }
+
     rounds.push({
       roundNumber: roundNum,
       winner: t1WinsRound ? (team1.isUser ? 'user' : 'opponent') : (team2.isUser ? 'user' : 'opponent'),
@@ -654,7 +694,9 @@ export function simulateCompetitiveMap(
       phase: sideInfo.phase,
       overtimeBlock: sideInfo.overtimeBlock,
       userSide,
-      opponentSide
+      opponentSide,
+      playerRoundRatings,
+      playerAverageRatings
     });
 
     // Check termination condition immediately after each round

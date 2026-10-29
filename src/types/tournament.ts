@@ -46,6 +46,8 @@ export interface RoundEvent {
   overtimeBlock?: number; // 1 for OT1 (13-18 OT rounds), 2 for OT2, etc.
   userSide: 'CT' | 'T';
   opponentSide: 'CT' | 'T';
+  playerRoundRatings?: Record<string, number>;
+  playerAverageRatings?: Record<string, number>;
 }
 
 export interface MapGameResult {

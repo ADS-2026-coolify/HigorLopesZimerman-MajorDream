@@ -291,31 +291,61 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
               <span className="text-xs font-semibold text-cs-green">
                 {userTeam.name} (OVR {userTeam.ovr})
               </span>
-              {currentRoundEvent && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  currentRoundEvent.userSide === 'CT' ? 'bg-cs-blue/20 text-cs-blue border border-cs-blue/40' : 'bg-cs-accent/20 text-cs-accent border border-cs-accent/40'
-                }`}>
-                  Lado: {currentRoundEvent.userSide}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {currentRoundEvent && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    currentRoundEvent.userSide === 'CT' ? 'bg-cs-blue/20 text-cs-blue border border-cs-blue/40' : 'bg-cs-accent/20 text-cs-accent border border-cs-accent/40'
+                  }`}>
+                    Lado: {currentRoundEvent.userSide}
+                  </span>
+                )}
+                <div className="flex items-center gap-2 text-[10px] font-semibold text-cs-muted">
+                  <span className="w-6 text-right">OVR</span>
+                  <span className="w-9 text-right">Rnd</span>
+                  <span className="w-10 text-right">Média</span>
+                </div>
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               {userTeam.roster.slice(0, 5).map(player => {
                 const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-cs-surface', text: 'text-white' };
+                const roundRating = currentRoundEvent?.playerRoundRatings?.[player.id];
+                const avgRating = currentRoundEvent?.playerAverageRatings?.[player.id];
+                const avgColor = avgRating === undefined
+                  ? 'text-cs-muted'
+                  : avgRating >= 1.25
+                  ? 'text-cs-accent'
+                  : avgRating >= 1.05
+                  ? 'text-cs-green'
+                  : avgRating < 0.90
+                  ? 'text-cs-red'
+                  : 'text-white';
                 return (
                   <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-cs-surface border border-cs-border/60">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="w-5 h-3.5 rounded overflow-hidden shrink-0 border border-cs-border flex items-center justify-center">
                         <CountryFlag countryCode={player.country} />
                       </div>
                       <span className="text-xs text-cs-muted font-semibold">{player.country}</span>
-                      <span className="font-bold text-white">{player.nickname}</span>
+                      <span className="font-bold text-white truncate">{player.nickname}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badge.bg} ${badge.text}`}>
                         {badge.label}
                       </span>
-                      <span className="font-mono font-bold text-cs-text">{player.ovr}</span>
+                      <span className="font-mono text-cs-muted w-6 text-right" title="Overall base">{player.ovr}</span>
+                      <span
+                        className="font-mono text-[11px] text-cs-muted w-9 text-right tabular-nums"
+                        title="Rating neste round"
+                      >
+                        {roundRating !== undefined ? roundRating.toFixed(2) : '—'}
+                      </span>
+                      <span
+                        className={`font-mono font-bold w-10 text-right tabular-nums ${avgColor}`}
+                        title="Rating médio na partida"
+                      >
+                        {avgRating !== undefined ? avgRating.toFixed(2) : '—'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -329,13 +359,20 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
               <span className="text-xs font-semibold text-cs-red">
                 {opponentTeam.name} (OVR {opponentTeam.ovr})
               </span>
-              {currentRoundEvent && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  currentRoundEvent.opponentSide === 'CT' ? 'bg-cs-blue/20 text-cs-blue border border-cs-blue/40' : 'bg-cs-accent/20 text-cs-accent border border-cs-accent/40'
-                }`}>
-                  Lado: {currentRoundEvent.opponentSide}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {currentRoundEvent && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    currentRoundEvent.opponentSide === 'CT' ? 'bg-cs-blue/20 text-cs-blue border border-cs-blue/40' : 'bg-cs-accent/20 text-cs-accent border border-cs-accent/40'
+                  }`}>
+                    Lado: {currentRoundEvent.opponentSide}
+                  </span>
+                )}
+                <div className="flex items-center gap-2 text-[10px] font-semibold text-cs-muted">
+                  <span className="w-6 text-right">OVR</span>
+                  <span className="w-9 text-right">Rnd</span>
+                  <span className="w-10 text-right">Média</span>
+                </div>
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               {(opponentTeam.roster && opponentTeam.roster.length > 0 ? opponentTeam.roster : [
@@ -346,20 +383,43 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 { id: 'bot-5', nickname: 'Lurk Bot', country: 'UA', role: 'lurker', ovr: opponentTeam.ovr },
               ]).slice(0, 5).map(player => {
                 const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-cs-surface', text: 'text-white' };
+                const roundRating = currentRoundEvent?.playerRoundRatings?.[player.id];
+                const avgRating = currentRoundEvent?.playerAverageRatings?.[player.id];
+                const avgColor = avgRating === undefined
+                  ? 'text-cs-muted'
+                  : avgRating >= 1.25
+                  ? 'text-cs-accent'
+                  : avgRating >= 1.05
+                  ? 'text-cs-green'
+                  : avgRating < 0.90
+                  ? 'text-cs-red'
+                  : 'text-white';
                 return (
                   <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-cs-surface border border-cs-border/60">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="w-5 h-3.5 rounded overflow-hidden shrink-0 border border-cs-border flex items-center justify-center">
                         <CountryFlag countryCode={player.country} />
                       </div>
                       <span className="text-xs text-cs-muted font-semibold">{player.country}</span>
-                      <span className="font-bold text-white">{player.nickname}</span>
+                      <span className="font-bold text-white truncate">{player.nickname}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badge.bg} ${badge.text}`}>
                         {badge.label}
                       </span>
-                      <span className="font-mono font-bold text-cs-text">{player.ovr}</span>
+                      <span className="font-mono text-cs-muted w-6 text-right" title="Overall base">{player.ovr}</span>
+                      <span
+                        className="font-mono text-[11px] text-cs-muted w-9 text-right tabular-nums"
+                        title="Rating neste round"
+                      >
+                        {roundRating !== undefined ? roundRating.toFixed(2) : '—'}
+                      </span>
+                      <span
+                        className={`font-mono font-bold w-10 text-right tabular-nums ${avgColor}`}
+                        title="Rating médio na partida"
+                      >
+                        {avgRating !== undefined ? avgRating.toFixed(2) : '—'}
+                      </span>
                     </div>
                   </div>
                 );
