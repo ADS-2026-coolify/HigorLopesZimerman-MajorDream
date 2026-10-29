@@ -157,10 +157,10 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
         </div>
 
         {/* Scoreboard Center */}
-        <div className="flex items-center justify-center gap-8 sm:gap-14 my-6">
+        <div className="grid grid-cols-[140px_1fr_140px] items-center justify-items-center gap-4 sm:gap-8 my-6 max-w-2xl mx-auto">
           {/* User Team */}
-          <div className="flex flex-col items-center gap-2 text-center shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-green p-1 flex items-center justify-center bg-cs-bg shadow-sm">
+          <div className="flex flex-col items-center gap-2 text-center w-full">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-green p-1 flex items-center justify-center bg-cs-bg shadow-sm shrink-0">
               <TeamLogo
                 teamId={userTeam.id}
                 name={userTeam.name}
@@ -170,43 +170,43 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 className="w-full h-full rounded-full"
               />
             </div>
-            <span className="font-bold text-base sm:text-lg text-cs-green max-w-[140px] truncate">
+            <span className="font-bold text-base sm:text-lg text-cs-green max-w-[140px] truncate block">
               {userTeam.name}
             </span>
           </div>
 
           {/* Central Match Score */}
-          <div className="flex flex-col items-center min-w-0 flex-1">
+          <div className="flex flex-col items-center min-w-0 w-full">
             <div className="text-5xl sm:text-6xl font-display font-black text-white">
               {userLiveScore} <span className="text-cs-muted font-normal">−</span> {oppLiveScore}
             </div>
             {/* Subtitle with Regulation or Overtime Target and side switch */}
-            <span className="text-xs font-semibold text-cs-muted mt-1">
+            <span className="text-xs font-semibold text-cs-muted mt-1 text-center">
               {currentRoundEvent && currentRoundEvent.phase === 'overtime'
                 ? `Overtime ${currentRoundEvent.overtimeBlock}, primeiro a ${16 + 3 * ((currentRoundEvent.overtimeBlock || 1) - 1)}`
                 : 'MR12, primeiro a 13'}
             </span>
 
             {/* Round outcome timeline dots */}
-            <div className="flex items-center gap-1.5 mt-3 w-full max-w-[260px] flex-wrap justify-center">
+            <div className="flex items-center gap-1.5 mt-3 w-full max-w-[260px] flex-wrap justify-center min-h-[24px]">
               {displayedRounds.map((rnd, i) => (
                 <div
                   key={i}
                   title={`Round ${rnd.roundNumber}: ${rnd.winner === 'user' ? userTeam.name : opponentTeam.name}`}
-                  className={`w-2.5 h-2.5 rounded-full ${
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                     rnd.winner === 'user' ? 'bg-cs-green' : 'bg-cs-red'
                   }`}
                 />
               ))}
               {!isMapFinished && (
-                <div className="w-2.5 h-2.5 rounded-full border border-cs-accent motion-safe:animate-ping motion-reduce:animate-none" />
+                <div className="w-2.5 h-2.5 rounded-full border border-cs-accent motion-safe:animate-ping motion-reduce:animate-none shrink-0" />
               )}
             </div>
           </div>
 
           {/* Opponent Team */}
-          <div className="flex flex-col items-center gap-2 text-center shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-border p-1 flex items-center justify-center bg-cs-bg shadow-sm">
+          <div className="flex flex-col items-center gap-2 text-center w-full">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-cs-border p-1 flex items-center justify-center bg-cs-bg shadow-sm shrink-0">
               <TeamLogo
                 teamId={opponentTeam.id}
                 name={opponentTeam.name}
@@ -216,7 +216,7 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 className="w-full h-full rounded-full"
               />
             </div>
-            <span className="font-bold text-base sm:text-lg text-cs-text max-w-[140px] truncate">
+            <span className="font-bold text-base sm:text-lg text-cs-text max-w-[140px] truncate block">
               {opponentTeam.name}
             </span>
           </div>
