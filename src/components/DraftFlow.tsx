@@ -23,6 +23,7 @@ const REQUIRED_ROLES = [
   { key: 'entry', label: 'ENT', activeBg: 'bg-red-700' },
   { key: 'igl', label: 'IGL', activeBg: 'bg-blue-700' },
   { key: 'lurker', label: 'LURK', activeBg: 'bg-teal-700' },
+  { key: 'support', label: 'SUP', activeBg: 'bg-indigo-700' },
 ];
 
 export const DraftFlow: React.FC<DraftFlowProps> = ({ onCompleteDraft }) => {
