@@ -21,9 +21,32 @@ import { SwissStandings } from './SwissStandings';
 import { MapVetoView } from './MapVetoView';
 import { MatchSimulationView } from './MatchSimulationView';
 import { TeamLogo } from './TeamLogo';
+import { CountryFlag } from './CountryFlag';
 import { sound } from '../utils/sound';
 import confetti from 'canvas-confetti';
 import { Trophy, Swords, RotateCcw, ArrowRight, CheckCircle2, XCircle, Shield } from 'lucide-react';
+
+const roleBadgeConfig: Record<string, { label: string; bg: string; text: string }> = {
+  igl: { label: 'IGL', bg: 'bg-blue-700', text: 'text-white' },
+  awp: { label: 'AWP', bg: 'bg-violet-700', text: 'text-white' },
+  entry: { label: 'ENT', bg: 'bg-red-700', text: 'text-white' },
+  rifler: { label: 'RIF', bg: 'bg-amber-700', text: 'text-white' },
+  lurker: { label: 'LURK', bg: 'bg-teal-700', text: 'text-white' },
+  support: { label: 'SUP', bg: 'bg-indigo-700', text: 'text-white' },
+};
+
+function getHltvRatingMeta(rating?: number): { color: string; label: string } {
+  if (rating === undefined) return { color: 'text-cs-muted', label: 'Sem dados' };
+  if (rating >= 2.00) return { color: 'text-cs-accent', label: 'Extraordinário (2.00+)' };
+  if (rating >= 1.60) return { color: 'text-cs-accent', label: 'Excepcional (1.60–1.99)' };
+  if (rating >= 1.40) return { color: 'text-cs-accent', label: 'Excelente (1.40–1.59)' };
+  if (rating >= 1.20) return { color: 'text-cs-green', label: 'Muito bom (1.20–1.39)' };
+  if (rating >= 1.10) return { color: 'text-cs-green', label: 'Bom (1.10–1.19)' };
+  if (rating >= 1.00) return { color: 'text-white', label: 'Na média (1.00–1.09)' };
+  if (rating >= 0.90) return { color: 'text-cs-muted', label: 'Abaixo da média (0.90–0.99)' };
+  if (rating >= 0.70) return { color: 'text-cs-red', label: 'Ruim (0.70–0.89)' };
+  return { color: 'text-cs-red', label: 'Muito abaixo (<0.70)' };
+}
 
 interface SimulationCampaignProps {
   campaign: CampaignState;
@@ -420,6 +443,67 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
     return stagesSummary;
   };
 
+  // Compute cumulative HLTV 2.0 player rating averages across all matches, maps, and rounds played in the tournament
+  const getTournamentPlayerRatings = (team: TournamentTeam) => {
+    const allCompletedMatches: TournamentMatch[] = [];
+    (['stage1', 'stage2', 'stage3'] as const).forEach(sKey => {
+      const st = major.stages[sKey];
+      if (st?.completedMatches) {
+        allCompletedMatches.push(...st.completedMatches);
+      }
+    });
+    if (major.playoffs) {
+      major.playoffs.quarterfinals.forEach(q => {
+        if (q.match?.status === 'completed') allCompletedMatches.push(q.match);
+      });
+      major.playoffs.semifinals.forEach(s => {
+        if (s.match?.status === 'completed') allCompletedMatches.push(s.match);
+      });
+      if (major.playoffs.grandFinal.match?.status === 'completed') {
+        allCompletedMatches.push(major.playoffs.grandFinal.match);
+      }
+    }
+
+    const teamMatches = allCompletedMatches.filter(
+      m => m.team1Id === team.id || m.team2Id === team.id
+    );
+
+    const ratingSumByPlayer: Record<string, number> = {};
+    const roundCountByPlayer: Record<string, number> = {};
+    let totalMapsPlayed = 0;
+
+    teamMatches.forEach(m => {
+      m.mapResults.forEach(mapRes => {
+        totalMapsPlayed++;
+        mapRes.rounds.forEach(rnd => {
+          if (!rnd.playerRoundRatings) return;
+          team.roster.forEach(p => {
+            const val = rnd.playerRoundRatings?.[p.id];
+            if (val !== undefined) {
+              ratingSumByPlayer[p.id] = (ratingSumByPlayer[p.id] || 0) + val;
+              roundCountByPlayer[p.id] = (roundCountByPlayer[p.id] || 0) + 1;
+            }
+          });
+        });
+      });
+    });
+
+    const stats = team.roster.slice(0, 5).map(player => {
+      const rounds = roundCountByPlayer[player.id] || 0;
+      const avgRating =
+        rounds > 0 ? Math.round((ratingSumByPlayer[player.id] / rounds) * 100) / 100 : undefined;
+      return {
+        player,
+        avgRating,
+        roundsPlayed: rounds,
+        mapsPlayed: totalMapsPlayed,
+        matchesPlayed: teamMatches.length
+      };
+    });
+
+    return stats.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
+  };
+
   const renderStageTransitionCard = (stageKey: 'stage1' | 'stage2' | 'stage3') => {
     const st = major.stages[stageKey];
     if (!st) return null;
@@ -676,6 +760,8 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
     }
 
     const userSummary = getUserPerformanceSummary();
+    const userPlayerStats = getTournamentPlayerRatings(major.userTeamBase);
+    const champPlayerStats = champ.id !== 'user-team' ? getTournamentPlayerRatings(champ) : null;
 
     return (
       <div className="bg-cs-surface border-2 border-cs-accent rounded-2xl p-6 sm:p-8 space-y-6 text-center">
@@ -752,6 +838,126 @@ export const SimulationCampaign: React.FC<SimulationCampaignProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Overall Tournament Player Ratings (All Games Played) */}
+        <div className="bg-cs-card border border-cs-border rounded-xl p-4 max-w-3xl mx-auto space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-cs-border pb-2 text-left">
+            <span className="text-xs font-bold text-white">
+              Média de Rating HLTV 2.0 no Torneio ({major.userTeamBase.name})
+            </span>
+            <span className="text-xs text-cs-muted">
+              {userPlayerStats[0]?.matchesPlayed || 0} jogos · {userPlayerStats[0]?.mapsPlayed || 0} mapas · {userPlayerStats[0]?.roundsPlayed || 0} rounds
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+            {userPlayerStats.map((item, idx) => {
+              const badge = roleBadgeConfig[item.player.role] || {
+                label: item.player.role.toUpperCase(),
+                bg: 'bg-cs-surface',
+                text: 'text-white'
+              };
+              const meta = getHltvRatingMeta(item.avgRating);
+              const isMvp = idx === 0 && item.avgRating !== undefined;
+              return (
+                <div
+                  key={item.player.id}
+                  className={`p-3 rounded-lg border text-left flex flex-col justify-between gap-2 ${
+                    isMvp
+                      ? 'bg-cs-accent/10 border-cs-accent/60'
+                      : 'bg-cs-surface border-cs-border'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${badge.bg} ${badge.text}`}>
+                      {badge.label}
+                    </span>
+                    {isMvp && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cs-accent text-black">
+                        MVP
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <CountryFlag countryCode={item.player.country} className="w-3.5 h-2.5 shrink-0" />
+                    <span className="text-xs font-bold text-white truncate">
+                      {item.player.nickname}
+                    </span>
+                  </div>
+                  <div className="pt-1 border-t border-cs-border/60 flex items-baseline justify-between">
+                    <span className="text-[10px] text-cs-muted">OVR {item.player.ovr}</span>
+                    <span
+                      className={`font-mono font-black text-base tabular-nums ${meta.color}`}
+                      title={meta.label}
+                    >
+                      {item.avgRating !== undefined ? item.avgRating.toFixed(2) : '—'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* If a CPU team won the Major, also show Champion Team Player Ratings */}
+        {champPlayerStats && (
+          <div className="bg-cs-card border border-cs-border rounded-xl p-4 max-w-3xl mx-auto space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-cs-border pb-2 text-left">
+              <span className="text-xs font-bold text-cs-accent">
+                Elenco Campeão · Rating HLTV 2.0 ({champ.name})
+              </span>
+              <span className="text-xs text-cs-muted">
+                {champPlayerStats[0]?.matchesPlayed || 0} jogos · {champPlayerStats[0]?.mapsPlayed || 0} mapas · {champPlayerStats[0]?.roundsPlayed || 0} rounds
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+              {champPlayerStats.map((item, idx) => {
+                const badge = roleBadgeConfig[item.player.role] || {
+                  label: item.player.role.toUpperCase(),
+                  bg: 'bg-cs-surface',
+                  text: 'text-white'
+                };
+                const meta = getHltvRatingMeta(item.avgRating);
+                const isMvp = idx === 0 && item.avgRating !== undefined;
+                return (
+                  <div
+                    key={item.player.id}
+                    className={`p-3 rounded-lg border text-left flex flex-col justify-between gap-2 ${
+                      isMvp
+                        ? 'bg-cs-accent/10 border-cs-accent/60'
+                        : 'bg-cs-surface border-cs-border'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${badge.bg} ${badge.text}`}>
+                        {badge.label}
+                      </span>
+                      {isMvp && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cs-accent text-black">
+                          MVP
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <CountryFlag countryCode={item.player.country} className="w-3.5 h-2.5 shrink-0" />
+                      <span className="text-xs font-bold text-white truncate">
+                        {item.player.nickname}
+                      </span>
+                    </div>
+                    <div className="pt-1 border-t border-cs-border/60 flex items-baseline justify-between">
+                      <span className="text-[10px] text-cs-muted">OVR {item.player.ovr}</span>
+                      <span
+                        className={`font-mono font-black text-base tabular-nums ${meta.color}`}
+                        title={meta.label}
+                      >
+                        {item.avgRating !== undefined ? item.avgRating.toFixed(2) : '—'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
