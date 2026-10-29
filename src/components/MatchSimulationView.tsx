@@ -38,6 +38,19 @@ const ROUND_DELAY_MS: Record<Exclude<RoundSpeed, 'instant'>, number> = {
   '3x': 133,
 };
 
+function getHltvRatingMeta(rating?: number): { color: string; label: string } {
+  if (rating === undefined) return { color: 'text-cs-muted', label: 'Sem dados ainda' };
+  if (rating >= 2.00) return { color: 'text-cs-accent', label: 'Desempenho extraordinário (2.00+)' };
+  if (rating >= 1.60) return { color: 'text-cs-accent', label: 'Partida excepcional (1.60–1.99)' };
+  if (rating >= 1.40) return { color: 'text-cs-accent', label: 'Excelente partida (1.40–1.59)' };
+  if (rating >= 1.20) return { color: 'text-cs-green', label: 'Partida muito boa (1.20–1.39)' };
+  if (rating >= 1.10) return { color: 'text-cs-green', label: 'Boa partida (1.10–1.19)' };
+  if (rating >= 1.00) return { color: 'text-white', label: 'Próximo da média (1.00–1.09)' };
+  if (rating >= 0.90) return { color: 'text-cs-muted', label: 'Um pouco abaixo da média (0.90–0.99)' };
+  if (rating >= 0.70) return { color: 'text-cs-red', label: 'Partida ruim (0.70–0.89)' };
+  return { color: 'text-cs-red', label: 'Muito abaixo do esperado (<0.70)' };
+}
+
 export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
   match,
   userTeam,
@@ -311,15 +324,8 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-cs-surface', text: 'text-white' };
                 const roundRating = currentRoundEvent?.playerRoundRatings?.[player.id];
                 const avgRating = currentRoundEvent?.playerAverageRatings?.[player.id];
-                const avgColor = avgRating === undefined
-                  ? 'text-cs-muted'
-                  : avgRating >= 1.25
-                  ? 'text-cs-accent'
-                  : avgRating >= 1.05
-                  ? 'text-cs-green'
-                  : avgRating < 0.90
-                  ? 'text-cs-red'
-                  : 'text-white';
+                const roundMeta = getHltvRatingMeta(roundRating);
+                const avgMeta = getHltvRatingMeta(avgRating);
                 return (
                   <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-cs-surface border border-cs-border/60">
                     <div className="flex items-center gap-2 min-w-0">
@@ -336,13 +342,13 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                       <span className="font-mono text-cs-muted w-6 text-right" title="Overall base">{player.ovr}</span>
                       <span
                         className="font-mono text-[11px] text-cs-muted w-9 text-right tabular-nums"
-                        title="Rating neste round"
+                        title={`HLTV 2.0 no round: ${roundMeta.label}`}
                       >
                         {roundRating !== undefined ? roundRating.toFixed(2) : '—'}
                       </span>
                       <span
-                        className={`font-mono font-bold w-10 text-right tabular-nums ${avgColor}`}
-                        title="Rating médio na partida"
+                        className={`font-mono font-bold w-10 text-right tabular-nums ${avgMeta.color}`}
+                        title={`HLTV Rating 2.0 (média): ${avgMeta.label}`}
                       >
                         {avgRating !== undefined ? avgRating.toFixed(2) : '—'}
                       </span>
@@ -385,15 +391,8 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                 const badge = roleBadgeConfig[player.role] || { label: player.role.toUpperCase(), bg: 'bg-cs-surface', text: 'text-white' };
                 const roundRating = currentRoundEvent?.playerRoundRatings?.[player.id];
                 const avgRating = currentRoundEvent?.playerAverageRatings?.[player.id];
-                const avgColor = avgRating === undefined
-                  ? 'text-cs-muted'
-                  : avgRating >= 1.25
-                  ? 'text-cs-accent'
-                  : avgRating >= 1.05
-                  ? 'text-cs-green'
-                  : avgRating < 0.90
-                  ? 'text-cs-red'
-                  : 'text-white';
+                const roundMeta = getHltvRatingMeta(roundRating);
+                const avgMeta = getHltvRatingMeta(avgRating);
                 return (
                   <div key={player.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-cs-surface border border-cs-border/60">
                     <div className="flex items-center gap-2 min-w-0">
@@ -410,13 +409,13 @@ export const MatchSimulationView: React.FC<MatchSimulationViewProps> = ({
                       <span className="font-mono text-cs-muted w-6 text-right" title="Overall base">{player.ovr}</span>
                       <span
                         className="font-mono text-[11px] text-cs-muted w-9 text-right tabular-nums"
-                        title="Rating neste round"
+                        title={`HLTV 2.0 no round: ${roundMeta.label}`}
                       >
                         {roundRating !== undefined ? roundRating.toFixed(2) : '—'}
                       </span>
                       <span
-                        className={`font-mono font-bold w-10 text-right tabular-nums ${avgColor}`}
-                        title="Rating médio na partida"
+                        className={`font-mono font-bold w-10 text-right tabular-nums ${avgMeta.color}`}
+                        title={`HLTV Rating 2.0 (média): ${avgMeta.label}`}
                       >
                         {avgRating !== undefined ? avgRating.toFixed(2) : '—'}
                       </span>

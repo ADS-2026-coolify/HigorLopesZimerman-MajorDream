@@ -623,11 +623,24 @@ export function simulateCompetitiveMap(
   const t2Roster = getFallbackRoster(team2);
   const cumulativeRatingSums: Record<string, number> = {};
 
-  const computePlayerRoundRating = (ovr: number, wonRound: boolean, r: number): number => {
-    const skillOffset = (ovr - 85) * 0.015;
-    const base = wonRound ? 1.24 + skillOffset : 0.78 + skillOffset;
-    const swing = (r - 0.5) * 1.15;
-    const raw = Math.min(2.45, Math.max(0.25, base + swing));
+  const computePlayerRoundRating = (ovr: number, role: string, wonRound: boolean, r1: number, r2: number): number => {
+    // Role impact modifiers (star roles have slightly higher rating ceiling, support/IGL slightly more conservative)
+    const roleBonus =
+      role === 'awp' || role === 'entry' ? 0.04 :
+      role === 'rifler' || role === 'lurker' ? 0.02 :
+      role === 'igl' ? -0.03 : -0.02;
+
+    // OVR offset centered around 88 (e.g. 96 OVR -> +0.10, 82 OVR -> -0.08)
+    const skillOffset = (ovr - 88) * 0.012 + roleBonus;
+
+    // Base round rating centered around HLTV 2.0 reference (1.06 average)
+    const base = (wonRound ? 1.26 : 0.82) + skillOffset;
+
+    // Bell-shaped swing using two random samples (-0.75 to +0.75) + rare pop-off round (multi-kill/clutch)
+    const bellSwing = ((r1 + r2) / 2 - 0.5) * 1.5;
+    const popOff = r1 > 0.90 && wonRound ? (r1 - 0.90) * 4.5 : 0;
+
+    const raw = Math.min(2.65, Math.max(0.20, base + bellSwing + popOff));
     return Math.round(raw * 100) / 100;
   };
 
@@ -671,14 +684,14 @@ export function simulateCompetitiveMap(
     const playerAverageRatings: Record<string, number> = {};
 
     for (const p of t1Roster) {
-      const rRating = computePlayerRoundRating(p.ovr, t1WinsRound, rng());
+      const rRating = computePlayerRoundRating(p.ovr, p.role, t1WinsRound, rng(), rng());
       playerRoundRatings[p.id] = rRating;
       cumulativeRatingSums[p.id] = (cumulativeRatingSums[p.id] || 0) + rRating;
       playerAverageRatings[p.id] = Math.round((cumulativeRatingSums[p.id] / roundNum) * 100) / 100;
     }
 
     for (const p of t2Roster) {
-      const rRating = computePlayerRoundRating(p.ovr, !t1WinsRound, rng());
+      const rRating = computePlayerRoundRating(p.ovr, p.role, !t1WinsRound, rng(), rng());
       playerRoundRatings[p.id] = rRating;
       cumulativeRatingSums[p.id] = (cumulativeRatingSums[p.id] || 0) + rRating;
       playerAverageRatings[p.id] = Math.round((cumulativeRatingSums[p.id] / roundNum) * 100) / 100;
