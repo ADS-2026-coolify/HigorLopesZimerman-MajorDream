@@ -1,4 +1,4 @@
-name: MajorDream CI
+name: MajorDream CI/CD
 
 on:
   push:
@@ -11,23 +11,24 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: majordream-ci-${{ github.ref }}
+  group: majordream-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate:
+  build:
     name: Test and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -41,10 +42,20 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Upload production build
-        uses: actions/upload-artifact@v4
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          name: majordream-dist
           path: dist/
-          if-no-files-found: error
-          retention-days: 7
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
