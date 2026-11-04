@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { HISTORICAL_TEAMS, ALL_PLAYERS, ACTIVE_MAPS } from './data/csData';
+import { HISTORICAL_TEAMS, ALL_PLAYERS, ACTIVE_MAPS } from '../src/data/csData';
 
 dotenv.config();
 
